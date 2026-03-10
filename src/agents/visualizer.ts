@@ -162,7 +162,7 @@ ${widgetSchemaJSON}
 1. Field names (xField, categoryField, etc.) MUST exactly match column names from the sample data shown.
 2. ALWAYS include ai_insight with a text summary and severity.
 3. For ai_insight, do NOT set dataSourceIndex.
-4. Return 3–5 widgets total.
+4. Return 3-12 widgets total.
 
 ## Colors: Revenue/Profit→green, Expenses/Loss→red, Neutral→blue, Warning→orange, Special→purple`;
 

@@ -4,7 +4,7 @@ export interface SubTask {
   id: string;
   description: string;
   dependsOn: string[];
-  type: "data_query" | "calculation" | "comparison";
+  type: "data_query";
 }
 
 // ─── Schema Metadata ─────────────────────────────────────────────────────────

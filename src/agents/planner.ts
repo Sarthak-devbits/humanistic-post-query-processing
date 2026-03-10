@@ -17,9 +17,9 @@ const SubTaskSchema = z.object({
     .array(z.string())
     .describe("IDs of sub-tasks that must complete before this one"),
   type: z
-    .enum(["data_query", "calculation", "comparison"])
+    .literal("data_query")
     .describe(
-      "data_query = needs SQL, calculation = needs math on existing data, comparison = compares results of other tasks",
+      "All tasks must be data_query — SQL handles all aggregations and calculations",
     ),
 });
 
@@ -34,25 +34,27 @@ const PlannerOutputSchema = z.object({
 
 // ─── System Prompt ───────────────────────────────────────────────────────────
 
-const PLANNER_SYSTEM_PROMPT = `You are a financial query planner. Your job is to decompose a user's natural language question about their financial data into discrete, actionable sub-tasks.
+const PLANNER_SYSTEM_PROMPT = `You are a financial query planner. Your job is to decompose a user's natural language question into independent SQL sub-tasks.
 
 CRITICAL Rules:
-1. Generate AT MOST 5 sub-tasks. Fewer is better — combine related queries when possible.
-2. STRONGLY PREFER "data_query" type. Let SQL do the heavy lifting (use CTEs, CASE, aggregations).
-   - Instead of: task_1=fetch revenue, task_2=fetch expenses, task_3=calculate profit
-   - Do: task_1=fetch revenue, expenses, and profit in ONE query using CTEs
-3. Only use "calculation" if it genuinely cannot be done in SQL (e.g., forecasting, complex financial models).
-4. Only use "comparison" if you need to compare results from two separate database queries.
-5. Each data_query description must be SELF-CONTAINED — include all details needed to write SQL (time period, metrics, filters).
-6. Do NOT create sub-tasks that depend on other sub-tasks unless absolutely necessary.
-7. Keep descriptions specific to financial domain (revenue, expenses, profit, cash flow, etc).
+1. ALL tasks must be type "data_query". SQL handles everything — aggregations, calculations, comparisons, trends.
+2. Generate AT MOST 5 sub-tasks. Fewer is better — combine related queries into ONE using CTEs.
+   - Revenue + expenses + profit → one query with CTEs
+   - Trend analysis → one query with DATE_TRUNC grouping
+   - Comparisons → one query with CASE or self-join
+3. Each sub-task must be SELF-CONTAINED and INDEPENDENT — it should not depend on another task's results.
+4. NEVER create a sub-task to "summarize", "analyze", or "provide an insight" — the Visualizer handles this automatically.
+5. Each description must include: what metric, what time period, what filters.
 
 Example:
-  User: "What is the profit I had last 3 years and do I have enough money to sustain next 2 years for my crops?"
-  → task_1: data_query — "Retrieve yearly revenue and expenses for the last 3 years"
-  → task_2: data_query — "Retrieve current cash balance and average monthly expenses"
-  → task_3: calculation — "Calculate profit per year from task_1 results"
-  → task_4: calculation — "Calculate months of runway from task_2 results and check if >= 24 months"`;
+  User: "What is the profit I had last 3 years and which store performs better?"
+  → task_1: data_query — "Retrieve yearly revenue, expenses, and net profit for the last 3 years using CTEs"
+  → task_2: data_query — "Retrieve total revenue per store location grouped by store_id"
+
+  NOT ALLOWED:
+  ✗ task_3: calculation — any calculation task (SQL handles this)
+  ✗ task_4: comparison — any comparison task (SQL handles this)
+  ✗ task_5: any "summarize results" task (Visualizer handles this)`;
 
 // ─── Planner Agent ───────────────────────────────────────────────────────────
 

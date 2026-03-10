@@ -79,8 +79,8 @@ async function planNode(state: QueryState): Promise<Partial<QueryState>> {
   console.log("🧠 [Planner] Decomposing query...");
   try {
     const { subTasks, reasoning } = await planQuery(state.query);
-    console.log("SubTasks:")
-    console.log(subTasks)
+    console.log("SubTasks:");
+    console.log(subTasks);
     console.log(`   → ${subTasks.length} sub-tasks identified`);
     return {
       subTasks,
@@ -100,18 +100,7 @@ async function selectSchemaNode(
   state: QueryState,
 ): Promise<Partial<QueryState>> {
   const task = state.subTasks[state.currentTaskIndex];
-  console.log("Task:")
-  console.log(task)
   if (!task) return { error: "No current sub-task found" };
-  console.log(
-    `🔍 [Schema Selector] Selecting schema for: "${task.description}"`,
-  );
-
-  // Skip schema selection for non-data-query tasks
-  if (task.type !== "data_query") {
-    console.log(`   ⏭️  Skipping schema selection for ${task.type} task`);
-    return {};
-  }
 
   console.log(`🔍 [Schema Selector] Finding tables for: "${task.description}"`);
   try {
@@ -145,15 +134,6 @@ async function generateSQLNode(
   const task = state.subTasks[state.currentTaskIndex];
   if (!task) return { error: "No current sub-task found" };
 
-  // Skip SQL generation for non-data-query tasks
-  if (task.type !== "data_query") {
-    console.log(`   ⏭️  Skipping SQL generation for ${task.type} task`);
-    return {
-      currentSQL: "",
-      sqlError: null,
-    };
-  }
-
   console.log(`✍️  [SQL Generator] Writing query for: "${task.description}"`);
   try {
     const { sql, explanation } = await generateSQL(
@@ -178,15 +158,6 @@ async function generateSQLNode(
 async function executeSQLNode(state: QueryState): Promise<Partial<QueryState>> {
   const task = state.subTasks[state.currentTaskIndex];
   if (!task) return { error: "No current sub-task found" };
-
-  // Skip execution for non-data-query tasks (use previous results)
-  if (task.type !== "data_query" || !state.currentSQL) {
-    console.log(`   ⏭️  Skipping SQL execution for ${task.type} task`);
-    return {
-      currentData: [],
-      sqlError: null,
-    };
-  }
 
   console.log(`⚡ [DB Executor] Running query...`);
   const result = await executeSafeSQL(state.currentSQL);
