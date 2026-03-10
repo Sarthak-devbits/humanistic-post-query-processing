@@ -1,0 +1,775 @@
+# ┌─────────────────────────────────────────────────────────────────────────────┐
+# │  SCHEMA DESCRIPTIONS — DVD Rental Database                                 │
+# │  NeonDB PostgreSQL sample database                                         │
+# │                                                                            │
+# │  The AI agents use these descriptions to understand the business meaning   │
+# │  of each table and column when generating SQL queries.                     │
+# └─────────────────────────────────────────────────────────────────────────────┘
+
+tables:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CORE PEOPLE
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: actor
+    description: "Actors who appear in films. Contains biographical info."
+    business_context: "Not directly used in financial analysis. Useful for content-level reporting (e.g., which actors generate the most rental revenue)."
+    columns:
+      - name: actor_id
+        type: integer
+        description: "Primary key. Unique identifier for each actor."
+        role: primary_key
+      - name: first_name
+        type: character varying
+        description: "Actor's first name."
+        required: true
+      - name: last_name
+        type: character varying
+        description: "Actor's last name."
+        required: true
+      - name: last_update
+        type: timestamp without time zone
+        description: "Timestamp of the last modification to this record."
+        required: true
+
+  - name: actor_info
+    description: "Denormalized view combining actor details with their filmography. Read-only view, not a base table."
+    business_context: "Convenience view for looking up which films an actor has appeared in. Not for financial queries."
+    columns:
+      - name: actor_id
+        type: integer
+        description: "Actor identifier, references actor.actor_id."
+      - name: first_name
+        type: character varying
+        description: "Actor's first name."
+      - name: last_name
+        type: character varying
+        description: "Actor's last name."
+      - name: film_info
+        type: text
+        description: "Comma-separated list of films grouped by category that this actor has appeared in."
+
+  - name: customer
+    description: "Registered customers who rent DVDs. Each customer belongs to a store and has an address."
+    business_context: >
+      Core entity for revenue analysis. Every payment is linked to a customer.
+      Use this table to analyze per-customer spending, identify top customers,
+      or segment by geography via address → city → country joins.
+    columns:
+      - name: customer_id
+        type: integer
+        description: "Primary key. Unique identifier for each customer."
+        role: primary_key
+      - name: store_id
+        type: smallint
+        description: "Which store this customer is registered at. FK → store.store_id."
+        required: true
+      - name: first_name
+        type: character varying
+        description: "Customer's first name."
+        required: true
+      - name: last_name
+        type: character varying
+        description: "Customer's last name."
+        required: true
+      - name: email
+        type: character varying
+        description: "Customer's email address. May be null for older records."
+      - name: address_id
+        type: smallint
+        description: "FK → address.address_id. Links customer to their physical address."
+        role: foreign_key
+        references: "address.address_id"
+        required: true
+      - name: activebool
+        type: boolean
+        description: "Whether the customer account is currently active (true) or inactive (false)."
+        required: true
+      - name: create_date
+        type: date
+        description: "Date when the customer first registered."
+        required: true
+      - name: last_update
+        type: timestamp without time zone
+        description: "Timestamp of the last modification to this record."
+      - name: active
+        type: integer
+        description: "Integer version of active status. 1 = active, 0 = inactive. Redundant with activebool."
+    relationships:
+      - from: customer.address_id
+        to: address.address_id
+        type: many_to_one
+        description: "Each customer has one address for billing/contact purposes."
+
+  - name: customer_list
+    description: "Denormalized view combining customer name, address, city, country, and active status into a flat list."
+    business_context: "Convenience view for quick customer lookups with full address. Use for reports, not for financial aggregation."
+    columns:
+      - name: id
+        type: integer
+        description: "Customer ID (same as customer.customer_id)."
+      - name: name
+        type: text
+        description: "Full name formatted as 'FIRST_NAME LAST_NAME'."
+      - name: address
+        type: character varying
+        description: "Street address."
+      - name: zip code
+        type: character varying
+        description: "Postal/ZIP code."
+      - name: phone
+        type: character varying
+        description: "Phone number."
+      - name: city
+        type: character varying
+        description: "City name."
+      - name: country
+        type: character varying
+        description: "Country name."
+      - name: notes
+        type: text
+        description: "'active' or 'inactive' based on customer status."
+      - name: sid
+        type: smallint
+        description: "Store ID the customer belongs to."
+
+  - name: staff
+    description: "Employees who work at the stores, process rentals, and handle payments."
+    business_context: "Used for staff performance analysis — which staff member processed the most rentals or collected the most revenue."
+    columns:
+      - name: staff_id
+        type: integer
+        description: "Primary key. Unique identifier for each staff member."
+        role: primary_key
+      - name: first_name
+        type: character varying
+        description: "Staff member's first name."
+        required: true
+      - name: last_name
+        type: character varying
+        description: "Staff member's last name."
+        required: true
+      - name: address_id
+        type: smallint
+        description: "FK → address.address_id. Staff member's home address."
+        role: foreign_key
+        references: "address.address_id"
+        required: true
+      - name: email
+        type: character varying
+        description: "Staff member's email address."
+      - name: store_id
+        type: smallint
+        description: "Which store this staff member works at."
+        required: true
+      - name: active
+        type: boolean
+        description: "Whether the staff member is currently employed (true) or not (false)."
+        required: true
+      - name: username
+        type: character varying
+        description: "Login username for the rental system."
+        required: true
+      - name: password
+        type: character varying
+        description: "Hashed password. Never expose in queries."
+      - name: last_update
+        type: timestamp without time zone
+        description: "Timestamp of the last modification to this record."
+        required: true
+      - name: picture
+        type: bytea
+        description: "Staff member's photo (binary). Not useful for SQL queries."
+    relationships:
+      - from: staff.address_id
+        to: address.address_id
+        type: many_to_one
+        description: "Each staff member has one home address."
+
+  - name: staff_list
+    description: "Denormalized view of staff with full address details in a flat format."
+    business_context: "Convenience view for staff directory lookups. Not for financial queries."
+    columns:
+      - name: id
+        type: integer
+        description: "Staff ID (same as staff.staff_id)."
+      - name: name
+        type: text
+        description: "Full name formatted as 'FIRST_NAME LAST_NAME'."
+      - name: address
+        type: character varying
+        description: "Street address."
+      - name: zip code
+        type: character varying
+        description: "Postal/ZIP code."
+      - name: phone
+        type: character varying
+        description: "Phone number."
+      - name: city
+        type: character varying
+        description: "City name."
+      - name: country
+        type: character varying
+        description: "Country name."
+      - name: sid
+        type: smallint
+        description: "Store ID the staff member works at."
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # FILM CATALOG
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: film
+    description: >
+      The DVD catalog. Each row is one film available for rental.
+      Contains pricing, duration, and classification info.
+    business_context: >
+      Use rental_rate for revenue-per-rental analysis.
+      Use replacement_cost for inventory valuation.
+      Join with film_category to analyze revenue by genre.
+    columns:
+      - name: film_id
+        type: integer
+        description: "Primary key. Unique identifier for each film."
+        role: primary_key
+      - name: title
+        type: character varying
+        description: "Film title."
+        required: true
+      - name: description
+        type: text
+        description: "Plot summary / synopsis of the film."
+      - name: release_year
+        type: integer
+        description: "Year the film was released."
+      - name: language_id
+        type: smallint
+        description: "FK → language.language_id. The primary language of the film."
+        role: foreign_key
+        references: "language.language_id"
+        required: true
+      - name: rental_duration
+        type: smallint
+        description: "Number of days a rental lasts before it's considered late. Default is typically 3-7 days."
+        required: true
+      - name: rental_rate
+        type: numeric
+        description: >
+          Price charged per rental in USD.
+          Typical values: 0.99, 2.99, 4.99.
+          This is the BASE PRICE for renting this film.
+        required: true
+        examples: ["0.99", "2.99", "4.99"]
+      - name: length
+        type: smallint
+        description: "Film duration in minutes."
+      - name: replacement_cost
+        type: numeric
+        description: >
+          Cost to replace the DVD if lost or damaged.
+          Represents inventory asset value.
+          Typical values: 9.99 to 29.99.
+        required: true
+        examples: ["9.99", "19.99", "29.99"]
+      - name: rating
+        type: USER-DEFINED
+        description: "MPAA rating: 'G', 'PG', 'PG-13', 'R', 'NC-17'. Stored as a custom enum type."
+      - name: last_update
+        type: timestamp without time zone
+        description: "Timestamp of the last modification to this record."
+        required: true
+      - name: special_features
+        type: ARRAY
+        description: "Array of special features on the DVD: 'Trailers', 'Commentaries', 'Deleted Scenes', 'Behind the Scenes'."
+      - name: fulltext
+        type: tsvector
+        description: "Full-text search vector for title and description. Used internally by PostgreSQL search, not for SQL queries."
+        required: true
+    relationships:
+      - from: film.language_id
+        to: language.language_id
+        type: many_to_one
+        description: "Each film has one primary language."
+
+  - name: film_actor
+    description: "Junction table linking films to actors. Many-to-many relationship."
+    business_context: "Use to find which actors are in which films. Join with payment/rental to analyze revenue per actor."
+    columns:
+      - name: actor_id
+        type: smallint
+        description: "FK → actor.actor_id. The actor in this film."
+        role: primary_key
+      - name: film_id
+        type: smallint
+        description: "FK → film.film_id. The film this actor appears in."
+        role: primary_key
+      - name: last_update
+        type: timestamp without time zone
+        description: "Timestamp of the last modification to this record."
+        required: true
+    relationships:
+      - from: film_actor.actor_id
+        to: actor.actor_id
+        type: many_to_one
+        description: "Links to the actor record."
+      - from: film_actor.film_id
+        to: film.film_id
+        type: many_to_one
+        description: "Links to the film record."
+
+  - name: film_category
+    description: "Junction table linking films to categories (genres). Each film belongs to exactly one category."
+    business_context: >
+      Essential for 'revenue by genre' analysis.
+      Join path: payment → rental → inventory → film → film_category → category.
+    columns:
+      - name: film_id
+        type: smallint
+        description: "FK → film.film_id."
+        role: primary_key
+      - name: category_id
+        type: smallint
+        description: "FK → category.category_id."
+        role: primary_key
+      - name: last_update
+        type: timestamp without time zone
+        description: "Timestamp of the last modification to this record."
+        required: true
+    relationships:
+      - from: film_category.category_id
+        to: category.category_id
+        type: many_to_one
+        description: "Links to the genre/category."
+      - from: film_category.film_id
+        to: film.film_id
+        type: many_to_one
+        description: "Links to the film."
+
+  - name: film_list
+    description: "Denormalized view combining film details with category and actors into a flat list."
+    business_context: "Quick film lookup view. For financial queries, prefer joining base tables directly."
+    columns:
+      - name: fid
+        type: integer
+        description: "Film ID (same as film.film_id)."
+      - name: title
+        type: character varying
+        description: "Film title."
+      - name: description
+        type: text
+        description: "Plot summary."
+      - name: category
+        type: character varying
+        description: "Genre name (e.g., 'Action', 'Comedy', 'Drama')."
+      - name: price
+        type: numeric
+        description: "Rental rate in USD (same as film.rental_rate)."
+      - name: length
+        type: smallint
+        description: "Film duration in minutes."
+      - name: rating
+        type: USER-DEFINED
+        description: "MPAA rating (G, PG, PG-13, R, NC-17)."
+      - name: actors
+        type: text
+        description: "Comma-separated list of actor names in this film."
+
+  - name: category
+    description: "Film genres/categories like Action, Comedy, Drama, Horror, etc."
+    business_context: "Used to group films by genre for revenue-by-category analysis."
+    columns:
+      - name: category_id
+        type: integer
+        description: "Primary key. Unique identifier for each category."
+        role: primary_key
+      - name: name
+        type: character varying
+        description: "Category name. Values include: Action, Animation, Children, Classics, Comedy, Documentary, Drama, Family, Foreign, Games, Horror, Music, New, Sci-Fi, Sports, Travel."
+        required: true
+        examples: ["Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Sports"]
+      - name: last_update
+        type: timestamp without time zone
+        description: "Timestamp of the last modification to this record."
+        required: true
+
+  - name: language
+    description: "Languages available for films."
+    business_context: "Rarely used in financial analysis. Useful for content diversity reports."
+    columns:
+      - name: language_id
+        type: integer
+        description: "Primary key."
+        role: primary_key
+      - name: name
+        type: character
+        description: "Language name (e.g., 'English', 'Italian', 'Japanese')."
+        required: true
+      - name: last_update
+        type: timestamp without time zone
+        description: "Timestamp of the last modification to this record."
+        required: true
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # INVENTORY & RENTALS
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: inventory
+    description: >
+      Physical DVD copies in stock. Each row is one physical disc.
+      Multiple inventory items can exist for the same film (multiple copies).
+    business_context: >
+      Links films to rentals. The join path for revenue analysis is:
+      payment → rental → inventory → film.
+      Inventory count per film = number of copies available.
+    columns:
+      - name: inventory_id
+        type: integer
+        description: "Primary key. Unique identifier for each physical DVD copy."
+        role: primary_key
+      - name: film_id
+        type: smallint
+        description: "FK → film.film_id. Which film this disc contains."
+        role: foreign_key
+        references: "film.film_id"
+        required: true
+      - name: store_id
+        type: smallint
+        description: "Which store holds this inventory item."
+        required: true
+      - name: last_update
+        type: timestamp without time zone
+        description: "Timestamp of the last modification to this record."
+        required: true
+    relationships:
+      - from: inventory.film_id
+        to: film.film_id
+        type: many_to_one
+        description: "Multiple inventory items (copies) can exist for one film."
+
+  - name: rental
+    description: >
+      Each row is one rental transaction — a customer renting a DVD.
+      Tracks when it was rented, when it was returned, and which staff processed it.
+    business_context: >
+      Core transaction table. Every rental generates a payment.
+      Use rental_date for time-based analysis.
+      return_date being NULL means the DVD has not been returned yet (overdue).
+      Join path for revenue: payment → rental → inventory → film.
+    columns:
+      - name: rental_id
+        type: integer
+        description: "Primary key. Unique identifier for each rental transaction."
+        role: primary_key
+      - name: rental_date
+        type: timestamp without time zone
+        description: "When the customer rented the DVD. Use for time-series analysis (DATE_TRUNC)."
+        required: true
+      - name: inventory_id
+        type: integer
+        description: "FK → inventory.inventory_id. Which physical DVD copy was rented."
+        role: foreign_key
+        references: "inventory.inventory_id"
+        required: true
+      - name: customer_id
+        type: smallint
+        description: "FK → customer.customer_id. Who rented it."
+        role: foreign_key
+        references: "customer.customer_id"
+        required: true
+      - name: return_date
+        type: timestamp without time zone
+        description: "When the DVD was returned. NULL means it has NOT been returned yet (overdue/outstanding)."
+      - name: staff_id
+        type: smallint
+        description: "FK → staff.staff_id. Which staff member processed this rental."
+        role: foreign_key
+        references: "staff.staff_id"
+        required: true
+      - name: last_update
+        type: timestamp without time zone
+        description: "Timestamp of the last modification to this record."
+        required: true
+    relationships:
+      - from: rental.customer_id
+        to: customer.customer_id
+        type: many_to_one
+        description: "Each rental belongs to one customer."
+      - from: rental.inventory_id
+        to: inventory.inventory_id
+        type: many_to_one
+        description: "Each rental is for one physical DVD copy."
+      - from: rental.staff_id
+        to: staff.staff_id
+        type: many_to_one
+        description: "Each rental was processed by one staff member."
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PAYMENTS (💰 PRIMARY FINANCIAL TABLE)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: payment
+    description: >
+      All payment transactions. Each row is one payment made by a customer for a rental.
+      This is the PRIMARY TABLE for all financial/revenue analysis.
+    business_context: >
+      THE most important table for revenue queries.
+      - Total revenue = SUM(amount)
+      - Revenue by period = SUM(amount) GROUP BY DATE_TRUNC('month', payment_date)
+      - Revenue by customer = SUM(amount) GROUP BY customer_id
+      - Revenue by film = JOIN rental → inventory → film, then SUM(amount)
+      - Revenue by category = JOIN rental → inventory → film → film_category → category
+      All amounts are POSITIVE (there are no refunds/expenses in this table).
+    columns:
+      - name: payment_id
+        type: integer
+        description: "Primary key. Unique identifier for each payment."
+        role: primary_key
+      - name: customer_id
+        type: smallint
+        description: "FK → customer.customer_id. The customer who made this payment."
+        role: foreign_key
+        references: "customer.customer_id"
+        required: true
+      - name: staff_id
+        type: smallint
+        description: "FK → staff.staff_id. The staff member who collected this payment."
+        role: foreign_key
+        references: "staff.staff_id"
+        required: true
+      - name: rental_id
+        type: integer
+        description: "FK → rental.rental_id. The rental this payment is for."
+        role: foreign_key
+        references: "rental.rental_id"
+        required: true
+      - name: amount
+        type: numeric
+        description: >
+          Payment amount in USD. ALL values are POSITIVE (revenue).
+          There are no negative values or refunds in this table.
+          Typical range: $0.99 to $11.99.
+        required: true
+        examples: ["0.99", "2.99", "4.99", "5.99", "9.99"]
+      - name: payment_date
+        type: timestamp without time zone
+        description: >
+          When the payment was made.
+          Use DATE_TRUNC('year', payment_date) for yearly aggregation.
+          Use DATE_TRUNC('month', payment_date) for monthly aggregation.
+          Use DATE_TRUNC('day', payment_date) for daily aggregation.
+          Data range is primarily in 2007.
+        required: true
+    relationships:
+      - from: payment.customer_id
+        to: customer.customer_id
+        type: many_to_one
+        description: "Each payment is made by one customer. Join to get customer details."
+      - from: payment.rental_id
+        to: rental.rental_id
+        type: many_to_one
+        description: "Each payment is for one rental. Join rental → inventory → film for film-level revenue."
+      - from: payment.staff_id
+        to: staff.staff_id
+        type: many_to_one
+        description: "Each payment was collected by one staff member."
+    sample_queries:
+      - description: "Total revenue"
+        sql: "SELECT SUM(amount) AS total_revenue FROM payment"
+      - description: "Monthly revenue"
+        sql: "SELECT DATE_TRUNC('month', payment_date) AS month, SUM(amount) AS revenue FROM payment GROUP BY 1 ORDER BY 1"
+      - description: "Top 10 customers by spending"
+        sql: "SELECT c.first_name, c.last_name, SUM(p.amount) AS total_spent FROM payment p JOIN customer c ON p.customer_id = c.customer_id GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 10"
+      - description: "Revenue by film category"
+        sql: "SELECT cat.name AS category, SUM(p.amount) AS revenue FROM payment p JOIN rental r ON p.rental_id = r.rental_id JOIN inventory i ON r.inventory_id = i.inventory_id JOIN film_category fc ON i.film_id = fc.film_id JOIN category cat ON fc.category_id = cat.category_id GROUP BY 1 ORDER BY 2 DESC"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # PRE-AGGREGATED VIEWS (Convenience)
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: sales_by_film_category
+    description: "Pre-aggregated view showing total sales (revenue) per film category/genre."
+    business_context: >
+      Quick lookup for revenue by genre WITHOUT needing complex joins.
+      Equivalent to: payment → rental → inventory → film → film_category → category.
+      Use this for simple category revenue queries. Use base tables for time-filtered queries.
+    columns:
+      - name: category
+        type: character varying
+        description: "Genre name (e.g., 'Action', 'Sports', 'Animation'). Same values as category.name."
+      - name: total_sales
+        type: numeric
+        description: "Total revenue (SUM of payment.amount) for all films in this category. In USD."
+
+  - name: sales_by_store
+    description: "Pre-aggregated view showing total sales per store with manager info."
+    business_context: >
+      Quick lookup for revenue by store location.
+      Use for store-level performance comparison without complex joins.
+    columns:
+      - name: store
+        type: text
+        description: "Store location formatted as 'City, Country'."
+      - name: manager
+        type: text
+        description: "Store manager's name formatted as 'First Last'."
+      - name: total_sales
+        type: numeric
+        description: "Total revenue for this store. In USD."
+
+  - name: nicer_but_slower_film_list
+    description: "Same as film_list but with properly capitalized actor names. Slower due to string processing."
+    business_context: "Display-only view. Use film_list or base tables for queries instead — this view is slow."
+    columns:
+      - name: fid
+        type: integer
+        description: "Film ID."
+      - name: title
+        type: character varying
+        description: "Film title."
+      - name: description
+        type: text
+        description: "Plot summary."
+      - name: category
+        type: character varying
+        description: "Genre name."
+      - name: price
+        type: numeric
+        description: "Rental rate in USD."
+      - name: length
+        type: smallint
+        description: "Film duration in minutes."
+      - name: rating
+        type: USER-DEFINED
+        description: "MPAA rating."
+      - name: actors
+        type: text
+        description: "Properly capitalized actor names, comma-separated."
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # GEOGRAPHY
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: address
+    description: "Physical addresses for customers, staff, and stores."
+    business_context: "Join path for geographic analysis: customer → address → city → country."
+    columns:
+      - name: address_id
+        type: integer
+        description: "Primary key."
+        role: primary_key
+      - name: address
+        type: character varying
+        description: "Street address line 1."
+        required: true
+      - name: address2
+        type: character varying
+        description: "Street address line 2. Usually null."
+      - name: district
+        type: character varying
+        description: "District, county, or province name."
+        required: true
+      - name: city_id
+        type: smallint
+        description: "FK → city.city_id."
+        role: foreign_key
+        references: "city.city_id"
+        required: true
+      - name: postal_code
+        type: character varying
+        description: "Postal/ZIP code. May be null for some countries."
+      - name: phone
+        type: character varying
+        description: "Phone number."
+        required: true
+      - name: last_update
+        type: timestamp without time zone
+        description: "Timestamp of the last modification."
+        required: true
+    relationships:
+      - from: address.city_id
+        to: city.city_id
+        type: many_to_one
+        description: "Each address is in one city."
+
+  - name: city
+    description: "Cities around the world."
+    business_context: "Part of the geographic hierarchy: address → city → country. Use for city-level revenue breakdown."
+    columns:
+      - name: city_id
+        type: integer
+        description: "Primary key."
+        role: primary_key
+      - name: city
+        type: character varying
+        description: "City name (e.g., 'London', 'Kabul', 'Abu Dhabi')."
+        required: true
+      - name: country_id
+        type: smallint
+        description: "FK → country.country_id."
+        role: foreign_key
+        references: "country.country_id"
+        required: true
+      - name: last_update
+        type: timestamp without time zone
+        description: "Timestamp of the last modification."
+        required: true
+    relationships:
+      - from: city.country_id
+        to: country.country_id
+        type: many_to_one
+        description: "Each city is in one country."
+
+  - name: country
+    description: "Countries of the world."
+    business_context: "Top of the geographic hierarchy. Use for country-level revenue analysis: payment → customer → address → city → country."
+    columns:
+      - name: country_id
+        type: integer
+        description: "Primary key."
+        role: primary_key
+      - name: country
+        type: character varying
+        description: "Country name (e.g., 'United States', 'India', 'Japan')."
+        required: true
+      - name: last_update
+        type: timestamp without time zone
+        description: "Timestamp of the last modification."
+        required: true
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # STORES
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: store
+    description: "Physical store locations. The DVD rental business has 2 stores."
+    business_context: "Use for store-level performance comparison. Each store has a manager (staff member) and an address."
+    columns:
+      - name: store_id
+        type: integer
+        description: "Primary key. Store identifier (typically 1 or 2)."
+        role: primary_key
+      - name: manager_staff_id
+        type: smallint
+        description: "FK → staff.staff_id. The staff member who manages this store."
+        role: foreign_key
+        references: "staff.staff_id"
+        required: true
+      - name: address_id
+        type: smallint
+        description: "FK → address.address_id. Physical location of the store."
+        role: foreign_key
+        references: "address.address_id"
+        required: true
+      - name: last_update
+        type: timestamp without time zone
+        description: "Timestamp of the last modification."
+        required: true
+    relationships:
+      - from: store.address_id
+        to: address.address_id
+        type: many_to_one
+        description: "Each store has one physical address."
+      - from: store.manager_staff_id
+        to: staff.staff_id
+        type: many_to_one
+        description: "Each store has one manager."

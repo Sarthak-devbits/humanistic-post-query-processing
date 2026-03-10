@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WidgetResponse",
+  "description": "The LLM returns widget configs with field mappings. The backend attaches real data from DB query results.",
+  "type": "array",
+  "items": {
+    "oneOf": [
+      {
+        "type": "object",
+        "description": "Single KPI number (e.g., Total Revenue, Customer Count)",
+        "properties": {
+          "type": { "const": "metric_card" },
+          "title": { "type": "string" },
+          "valueField": { "type": "string", "description": "DB column name for the main value" },
+          "aggregation": { "enum": ["sum", "avg", "count", "min", "max", "first"] },
+          "unit": { "type": "string" },
+          "trend": { "enum": ["up", "down", "flat"] },
+          "trendValue": { "type": "string" },
+          "color": { "enum": ["green", "red", "blue", "orange", "purple"] },
+          "dataSourceIndex": { "type": "number", "description": "Index of the sub-task result to use as data source (0-based)" }
+        },
+        "required": ["type", "title", "valueField", "aggregation", "color", "dataSourceIndex"]
+      },
+      {
+        "type": "object",
+        "description": "Time-series line chart (e.g., Revenue over months)",
+        "properties": {
+          "type": { "const": "line_chart" },
+          "title": { "type": "string" },
+          "xField": { "type": "string", "description": "DB column for X axis (usually a date/time field)" },
+          "yFields": { "type": "array", "items": { "type": "string" }, "description": "DB column(s) for Y axis lines" },
+          "xLabel": { "type": "string" },
+          "yLabel": { "type": "string" },
+          "dataSourceIndex": { "type": "number" }
+        },
+        "required": ["type", "title", "xField", "yFields", "xLabel", "yLabel", "dataSourceIndex"]
+      },
+      {
+        "type": "object",
+        "description": "Gauge/speedometer (e.g., Months of Runway)",
+        "properties": {
+          "type": { "const": "gauge" },
+          "title": { "type": "string" },
+          "valueField": { "type": "string", "description": "DB column for the gauge value" },
+          "aggregation": { "enum": ["sum", "avg", "count", "min", "max", "first"] },
+          "min": { "type": "number" },
+          "max": { "type": "number" },
+          "unit": { "type": "string" },
+          "thresholds": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": { "type": "number" },
+                "color": { "type": "string" },
+                "label": { "type": "string" }
+              },
+              "required": ["value", "color", "label"]
+            }
+          },
+          "dataSourceIndex": { "type": "number" }
+        },
+        "required": ["type", "title", "valueField", "aggregation", "min", "max", "unit", "thresholds", "dataSourceIndex"]
+      },
+      {
+        "type": "object",
+        "description": "Bar chart for category comparison (e.g., Revenue by Genre)",
+        "properties": {
+          "type": { "const": "bar_chart" },
+          "title": { "type": "string" },
+          "categoryField": { "type": "string", "description": "DB column for categories (X axis)" },
+          "valueFields": { "type": "array", "items": { "type": "string" }, "description": "DB column(s) for bar values" },
+          "xLabel": { "type": "string" },
+          "yLabel": { "type": "string" },
+          "dataSourceIndex": { "type": "number" }
+        },
+        "required": ["type", "title", "categoryField", "valueFields", "xLabel", "yLabel", "dataSourceIndex"]
+      },
+      {
+        "type": "object",
+        "description": "Donut/pie chart for part-of-whole (e.g., Expense breakdown)",
+        "properties": {
+          "type": { "const": "donut_chart" },
+          "title": { "type": "string" },
+          "labelField": { "type": "string", "description": "DB column for slice labels" },
+          "valueField": { "type": "string", "description": "DB column for slice values" },
+          "dataSourceIndex": { "type": "number" }
+        },
+        "required": ["type", "title", "labelField", "valueField", "dataSourceIndex"]
+      },
+      {
+        "type": "object",
+        "description": "Area chart for projections/trends (e.g., Projected vs Actual)",
+        "properties": {
+          "type": { "const": "area_chart" },
+          "title": { "type": "string" },
+          "xField": { "type": "string", "description": "DB column for X axis" },
+          "yFields": { "type": "array", "items": { "type": "string" }, "description": "DB column(s) for Y axis areas" },
+          "xLabel": { "type": "string" },
+          "yLabel": { "type": "string" },
+          "dataSourceIndex": { "type": "number" }
+        },
+        "required": ["type", "title", "xField", "yFields", "xLabel", "yLabel", "dataSourceIndex"]
+      },
+      {
+        "type": "object",
+        "description": "Searchable data table",
+        "properties": {
+          "type": { "const": "data_table" },
+          "title": { "type": "string" },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": { "type": "string", "description": "DB column name" },
+                "label": { "type": "string", "description": "Human-readable column header" },
+                "sortable": { "type": "boolean" }
+              },
+              "required": ["key", "label"]
+            }
+          },
+          "pageSize": { "type": "number" },
+          "dataSourceIndex": { "type": "number" }
+        },
+        "required": ["type", "title", "columns", "dataSourceIndex"]
+      },
+      {
+        "type": "object",
+        "description": "AI-generated text insight (no data source needed)",
+        "properties": {
+          "type": { "const": "ai_insight" },
+          "title": { "type": "string" },
+          "text": { "type": "string", "description": "Markdown text summary" },
+          "severity": { "enum": ["info", "success", "warning", "danger"] }
+        },
+        "required": ["type", "title", "text", "severity"]
+      }
+    ]
+  }
+}
