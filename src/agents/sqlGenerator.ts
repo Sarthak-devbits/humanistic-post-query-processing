@@ -67,6 +67,5 @@ export async function generateSQL(
     selectedSchema,
   });
 
-
   return result as GeneratedSQL;
 }

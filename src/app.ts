@@ -143,14 +143,14 @@ app.use(
 
 const server = app.listen(config.port, () => {
   console.log(`
-╔══════════════════════════════════════════════════╗
-║         Text-to-SQL & Visualization API          ║
-╠══════════════════════════════════════════════════╣
-║  🚀 Server running on port ${String(config.port).padEnd(21)}║
-║  📊 POST /api/query     → Process a query       ║
-║  ❤️  GET  /api/health    → Health check           ║
-║  🗄️  GET  /api/schema    → View DB schema         ║
-╚══════════════════════════════════════════════════╝
+    ╔══════════════════════════════════════════════════╗
+    ║         Text-to-SQL & Visualization API          ║
+    ╠══════════════════════════════════════════════════╣
+    ║  🚀 Server running on port ${String(config.port).padEnd(21)}║
+    ║  📊 POST /api/query     → Process a query       ║
+    ║  ❤️  GET  /api/health    → Health check           ║
+    ║  🗄️  GET  /api/schema    → View DB schema         ║
+    ╚══════════════════════════════════════════════════╝
   `);
 });
 
