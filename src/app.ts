@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import os from "os";
 import { config, validateConfig } from "./config/index.js";
 import { checkDatabaseHealth, closePool } from "./config/database.js";
 import { getSchemaContext, clearSchemaCache } from "./agents/schemaSelector.js";
@@ -94,6 +95,7 @@ app.post("/api/query", async (req, res) => {
 
   const query = body.query.trim();
   const tenantId = (body.tenantId || "").trim();
+  const xeroUserId = (body.xeroUserId || "").trim();
 
   if (!tenantId) {
     res.status(400).json({
@@ -104,10 +106,14 @@ app.post("/api/query", async (req, res) => {
     return;
   }
 
-  console.log(`\n📨 Incoming query: "${query}" [tenant: ${tenantId}]`);
+  console.log(
+    `\n📨 Incoming query: "${query}" [tenant: ${tenantId}]${
+      xeroUserId ? ` [user: ${xeroUserId}]` : ""
+    }`,
+  );
 
   try {
-    const { widgets, error } = await processQuery(query, tenantId);
+    const { widgets, error } = await processQuery(query, tenantId, xeroUserId);
 
     const response: QueryResponse = {
       success: !error,
@@ -153,11 +159,26 @@ app.use(
 // ─── Start Server ────────────────────────────────────────────────────────────
 
 const server = app.listen(config.port, () => {
+  const nets = os.networkInterfaces();
+  let localIp = "localhost";
+
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]!) {
+      if (net.family === "IPv4" && !net.internal) {
+        localIp = net.address;
+        break;
+      }
+    }
+  }
+
   console.log(`
     ╔══════════════════════════════════════════════════╗
     ║         Text-to-SQL & Visualization API          ║
     ╠══════════════════════════════════════════════════╣
-    ║  🚀 Server running on port ${String(config.port).padEnd(21)}║
+    ║  🚀 Port: ${String(config.port).padEnd(39)}║
+    ║  🔗 Local: http://localhost:${config.port.toString().padEnd(22)}║
+    ║  🌐 Network: http://${localIp}:${config.port.toString().padEnd(20)}║
+    ╠══════════════════════════════════════════════════╣
     ║  📊 POST /api/query     → Process a query       ║
     ║  ❤️  GET  /api/health    → Health check           ║
     ║  🗄️  GET  /api/schema    → View DB schema         ║

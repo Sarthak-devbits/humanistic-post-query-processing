@@ -70,6 +70,10 @@ const QueryStateAnnotation = Annotation.Root({
     reducer: (_, val) => val,
     default: () => null,
   }),
+  xeroUserId: Annotation<string | null>({
+    reducer: (_, val) => val,
+    default: () => null,
+  }),
 });
 
 type QueryState = typeof QueryStateAnnotation.State;
@@ -137,12 +141,15 @@ async function generateSQLNode(
 
   console.log(`✍️  [SQL Generator] Writing query for: "${task.description}"`);
   try {
-    // Inject the real tenantId into the task description so the LLM
-    // uses the actual value instead of the '<tenantId>' placeholder.
-    const taskWithTenant = `${task.description}\n\nIMPORTANT: The tenantId for this organisation is '${state.tenantId}'. Use this exact value in all WHERE clauses — do NOT use '<tenantId>' as a placeholder.`;
+    // Inject context into the task description.
+    let taskContext = `${task.description}\n\nIMPORTANT: The tenantId for this organisation is '${state.tenantId}'. Use this exact value in all WHERE clauses — do NOT use '<tenantId>' as a placeholder.`;
+
+    if (state.xeroUserId) {
+      taskContext += `\n\nUSER CONTEXT: The current user's Xero User ID is '${state.xeroUserId}'. Every query MUST include a filter for "xeroUserId" = '${state.xeroUserId}' to isolate this user's data from others.`;
+    }
 
     const { sql, explanation } = await generateSQL(
-      taskWithTenant,
+      taskContext,
       state.selectedSchemaText,
     );
     console.log(`   → Query: ${sql.substring(0, 100)}...`);
@@ -386,6 +393,7 @@ function buildQueryGraph() {
 export async function processQuery(
   query: string,
   tenantId: string,
+  xeroUserId?: string,
 ): Promise<{ widgets: Widget[]; error: string | null }> {
   const app = buildQueryGraph();
 
@@ -397,6 +405,7 @@ export async function processQuery(
     {
       query,
       tenantId,
+      xeroUserId: xeroUserId || null,
       maxRetries: 3,
     },
     {

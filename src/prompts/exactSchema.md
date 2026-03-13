@@ -125,11 +125,11 @@ CREATE TABLE xero_accounts (
 -- TABLE: xero_contacts
 -- ⚠️ DUAL-PURPOSE: stores BOTH customers AND suppliers in the same table.
 -- A single contact can be both a customer AND a supplier simultaneously.
--- USE FOR: contact details, customer/supplier analysis, AR/AP attribution.
 -- MANDATORY FILTERS:
---   WHERE "tenantId" = '<tenantId>'
---   AND "isCustomer" = true              ← for customer analysis
---   AND "isSupplier" = true              ← for supplier analysis
+--   1. WHERE "tenantId" = '<tenantId>'
+--   2. AND "xeroUserId" = '<xeroUserId>'
+--   3. AND "isCustomer" = true
+--   4. AND "isSupplier" = true              ← for supplier analysis
 -- GOTCHAS:
 --   • NEVER query without "isCustomer" or "isSupplier" when doing segmented analysis
 --     — mixing customers and suppliers produces nonsense results.
@@ -196,10 +196,10 @@ CREATE TABLE xero_items (
 -- TABLE: xero_invoices  ← PRIMARY FINANCIAL TABLE
 -- ⚠️ DUAL-PURPOSE: stores BOTH sales invoices AND purchase bills in one table.
 --   type = 'ACCREC' → Sales Invoice  (REVENUE — customers owe YOU money)
---   type = 'ACCPAY' → Purchase Bill  (EXPENSE — YOU owe suppliers money)
--- MANDATORY FILTERS (ALWAYS apply both):
+-- MANDATORY FILTERS (ALWAYS apply all):
 --   1. WHERE "tenantId" = '<tenantId>'
---   2. AND "type" = 'ACCREC'            ← for revenue / AR / customer queries
+--   2. AND "xeroUserId" = '<xeroUserId>'
+--   3. AND "type" = 'ACCREC'            ← for revenue / AR / customer queries
 --      OR "type" = 'ACCPAY'             ← for expenses / AP / supplier queries
 --      (omit ONLY for P&L that needs both sides)
 -- STATUS FILTERS — choose based on intent:
@@ -252,11 +252,11 @@ CREATE TABLE xero_invoices (
 -- TABLE: xero_credit_notes
 -- ⚠️ DUAL-PURPOSE: stores BOTH customer credits AND supplier credits.
 --   type = 'ACCRECCREDIT' → Customer credit note (reduces AR — refund issued to customer)
---   type = 'ACCPAYCREDIT' → Supplier credit note (reduces AP — supplier credited you)
 -- MANDATORY FILTERS:
---   WHERE "tenantId" = '<tenantId>'
---   AND "type" = 'ACCRECCREDIT'          ← customer refunds / net revenue adjustment
---   AND "type" = 'ACCPAYCREDIT'          ← supplier credits received
+--   1. WHERE "tenantId" = '<tenantId>'
+--   2. AND "xeroUserId" = '<xeroUserId>'
+--   3. AND "type" = 'ACCRECCREDIT'
+--      OR "type" = 'ACCPAYCREDIT'          ← supplier credits received
 -- STATUS FILTERS:
 --   For historical analysis: AND "status" IN ('AUTHORISED', 'PAID')
 --   For current balances:    AND "status" NOT IN ('DRAFT', 'VOIDED', 'DELETED')
@@ -294,7 +294,8 @@ CREATE TABLE xero_credit_notes (
 -- Purchase orders raised to suppliers (pre-bill stage).
 -- USE FOR: committed spend analysis, procurement tracking, PO-to-bill conversion.
 -- MANDATORY FILTERS:
---   WHERE "tenantId" = '<tenantId>'
+--   1. WHERE "tenantId" = '<tenantId>'
+--   2. AND "xeroUserId" = '<xeroUserId>'
 -- STATUS FILTERS:
 --   For committed spend:      AND "status" IN ('AUTHORISED', 'BILLED')
 --   For open/unfulfilled POs: AND "status" = 'AUTHORISED'
@@ -337,7 +338,8 @@ CREATE TABLE xero_purchase_orders (
 -- Sales quotes/proposals sent to prospective customers.
 -- USE FOR: sales pipeline analysis, win/loss rates, quote-to-invoice conversion.
 -- MANDATORY FILTERS:
---   WHERE "tenantId" = '<tenantId>'
+--   1. WHERE "tenantId" = '<tenantId>'
+--   2. AND "xeroUserId" = '<xeroUserId>'
 -- STATUS FILTERS (choose by intent):
 --   Won deals:       AND "status" IN ('ACCEPTED', 'INVOICED')
 --   Active pipeline: AND "status" IN ('SENT', 'ACCEPTED', 'INVOICED')
@@ -377,9 +379,10 @@ CREATE TABLE xero_quotes (
 --   type = 'RECEIVE' → money IN  to the bank account (cash receipts)
 --   type = 'SPEND'   → money OUT of the bank account (cash payments)
 -- MANDATORY FILTERS:
---   WHERE "tenantId" = '<tenantId>'
---   AND "type" = 'RECEIVE'               ← for cash inflows
---   AND "type" = 'SPEND'                 ← for cash outflows
+--   1. WHERE "tenantId" = '<tenantId>'
+--   2. AND "xeroUserId" = '<xeroUserId>'
+--   3. AND "type" = 'RECEIVE'
+--   4. AND "type" = 'SPEND'                 ← for cash outflows
 -- GOTCHAS:
 --   • These are NOT linked to invoices — they are raw bank movements.
 --     Use xero_payments for invoice settlement data.
@@ -418,9 +421,10 @@ CREATE TABLE xero_bank_transactions (
 --   paymentType = 'APCREDITPAYMENT' → supplier credit applied to a bill
 --   paymentType = 'ARCREDITPAYMENT' → customer credit applied to an invoice
 -- MANDATORY FILTERS:
---   WHERE "tenantId" = '<tenantId>'
---   AND "paymentType" = 'ACCRECPAYMENT'  ← cash received from customers
---   AND "paymentType" = 'ACCPAYPAYMENT'  ← cash paid to suppliers
+--   1. WHERE "tenantId" = '<tenantId>'
+--   2. AND "xeroUserId" = '<xeroUserId>'
+--   3. AND "paymentType" = 'ACCRECPAYMENT'
+--   4. AND "paymentType" = 'ACCPAYPAYMENT'  ← cash paid to suppliers
 -- DO NOT mix paymentTypes in a SUM — each represents a different cashflow direction.
 -- USE FOR: cash-basis reporting, DSO/DPO, days-to-pay analysis.
 -- GOTCHAS:

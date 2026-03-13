@@ -149,6 +149,7 @@ export interface QueryState {
   results: SubTaskResult[];
   widgets: Widget[];
   error: string | null;
+  xeroUserId?: string;
 }
 
 // ─── API Types ───────────────────────────────────────────────────────────────
@@ -156,6 +157,7 @@ export interface QueryState {
 export interface QueryRequest {
   query: string;
   tenantId: string; // Required — Xero organisation tenant ID
+  xeroUserId?: string; // Optional — current Xero user context
 }
 
 export interface QueryResponse {
