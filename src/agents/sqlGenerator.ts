@@ -7,12 +7,18 @@ import { dirname, join } from "path";
 import { config } from "../config/index.js";
 import type { GeneratedSQL } from "../types/index.js";
 
-// ─── Load SQL Rules ──────────────────────────────────────────────────────────
+// ─── Load Prompt Files ────────────────────────────────────────────────────────
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
 const sqlRules = readFileSync(
   join(__dirname, "../prompts/sqlRules.md"),
+  "utf-8",
+);
+
+const exactSchema = readFileSync(
+  join(__dirname, "../prompts/exactSchema.md"),
   "utf-8",
 );
 
@@ -27,20 +33,39 @@ const SQLOutputSchema = z.object({
 
 // ─── System Prompt ───────────────────────────────────────────────────────────
 
-const SQL_GENERATOR_PROMPT = `You are an expert PostgreSQL query writer for a financial database.
+const SQL_GENERATOR_PROMPT = `You are an expert PostgreSQL query writer for a Xero financial database.
 
 ${sqlRules}
 
-## Relevant Schema
-The following tables and columns are available for this specific query:
+---
+
+## Database DDL Reference — Ground Truth
+
+The following is the EXACT schema of the database. These are the precise table names and
+column names (camelCase) as they exist in PostgreSQL. You MUST use these exact names,
+always wrapped in double quotes. Do NOT use snake_case. Do NOT invent columns.
+
+${exactSchema}
+
+---
+
+## Relevant Tables for This Query
+
+The following subset of tables and columns is most relevant to the current query.
+Use these as a guide for which tables to focus on, but rely on the DDL above
+for exact column names and types:
+
 {selectedSchema}
 
-## Important
+## Final Instructions
+
 - Write ONLY a single SELECT query (or WITH + SELECT for CTEs).
-- Use the exact table and column names from the schema above.
-- Do NOT use tables or columns that are not listed above.
-- Always include date filtering when the task mentions a time period.
-- Round monetary values to 2 decimal places.`;
+- Use the EXACT column names from the DDL Reference above, wrapped in double quotes.
+- Do NOT use tables or columns not listed in the DDL.
+- Always include "tenantId" filtering in the WHERE clause.
+- Always filter invoices by "status" IN ('AUTHORISED', 'PAID') for financial analysis.
+- Round monetary values to 2 decimal places using ROUND(..., 2).
+- Always include date filtering when the task mentions a time period.`;
 
 // ─── SQL Generator Agent ─────────────────────────────────────────────────────
 
@@ -53,6 +78,8 @@ export async function generateSQL(
     temperature: 0,
     apiKey: config.openaiApiKey,
   });
+  console.log("Task.........")
+  console.log(taskDescription)
 
   const structuredLLM = llm.withStructuredOutput(SQLOutputSchema);
 

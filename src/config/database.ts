@@ -123,6 +123,7 @@ export async function loadSchemaMetadata(): Promise<SchemaContext> {
     ORDER BY table_name, ordinal_position
   `);
 
+
   const tableMap = new Map<string, ColumnInfo[]>();
   for (const col of result.rows) {
     const existing = tableMap.get(col.table_name) || [];
@@ -209,7 +210,7 @@ export async function loadSchemaMetadata(): Promise<SchemaContext> {
       return section;
     })
     .join("\n\n");
-
+    console.log(raw)
   return { tables, raw };
 }
 

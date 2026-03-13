@@ -17,6 +17,7 @@ import type {
 
 const QueryStateAnnotation = Annotation.Root({
   query: Annotation<string>,
+  tenantId: Annotation<string>, // Xero organisation ID
   subTasks: Annotation<SubTask[]>({
     reducer: (_, val) => val,
     default: () => [],
@@ -136,8 +137,12 @@ async function generateSQLNode(
 
   console.log(`✍️  [SQL Generator] Writing query for: "${task.description}"`);
   try {
+    // Inject the real tenantId into the task description so the LLM
+    // uses the actual value instead of the '<tenantId>' placeholder.
+    const taskWithTenant = `${task.description}\n\nIMPORTANT: The tenantId for this organisation is '${state.tenantId}'. Use this exact value in all WHERE clauses — do NOT use '<tenantId>' as a placeholder.`;
+
     const { sql, explanation } = await generateSQL(
-      task.description,
+      taskWithTenant,
       state.selectedSchemaText,
     );
     console.log(`   → Query: ${sql.substring(0, 100)}...`);
@@ -160,6 +165,7 @@ async function executeSQLNode(state: QueryState): Promise<Partial<QueryState>> {
   if (!task) return { error: "No current sub-task found" };
 
   console.log(`⚡ [DB Executor] Running query...`);
+  console.log(state.currentSQL);
   const result = await executeSafeSQL(state.currentSQL);
 
   if (!result.success) {
@@ -171,6 +177,7 @@ async function executeSQLNode(state: QueryState): Promise<Partial<QueryState>> {
   }
 
   console.log(`   ✅ Got ${result.rowCount} rows`);
+  console.log(result.data);
   return {
     currentData: result.data,
     sqlError: null,
@@ -378,20 +385,22 @@ function buildQueryGraph() {
 
 export async function processQuery(
   query: string,
+  tenantId: string,
 ): Promise<{ widgets: Widget[]; error: string | null }> {
   const app = buildQueryGraph();
 
   console.log(`\n${"═".repeat(60)}`);
-  console.log(`📝 Processing: "${query}"`);
+  console.log(`📝 Processing: "${query}" [tenant: ${tenantId}]`);
   console.log(`${"═".repeat(60)}\n`);
 
   const finalState = await app.invoke(
     {
       query,
+      tenantId,
       maxRetries: 3,
     },
     {
-      recursionLimit: 100, // Default is 25. Each sub-task uses ~4 nodes, so we need more headroom.
+      recursionLimit: 100,
     },
   );
 

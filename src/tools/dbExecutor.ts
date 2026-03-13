@@ -49,6 +49,7 @@ export interface SQLExecutionResult {
 
 export async function executeSafeSQL(sql: string): Promise<SQLExecutionResult> {
   // Step 1: Validate
+  console.log("Executing SQL")
   const validation = validateSQL(sql);
   if (!validation.safe) {
     return {

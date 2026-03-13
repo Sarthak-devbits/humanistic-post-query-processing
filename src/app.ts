@@ -93,10 +93,21 @@ app.post("/api/query", async (req, res) => {
   }
 
   const query = body.query.trim();
-  console.log(`\n📨 Incoming query: "${query}"`);
+  const tenantId = (body.tenantId || "").trim();
+
+  if (!tenantId) {
+    res.status(400).json({
+      success: false,
+      error:
+        "Missing 'tenantId' field in request body. This is required to scope queries to your Xero organisation.",
+    } as QueryResponse);
+    return;
+  }
+
+  console.log(`\n📨 Incoming query: "${query}" [tenant: ${tenantId}]`);
 
   try {
-    const { widgets, error } = await processQuery(query);
+    const { widgets, error } = await processQuery(query, tenantId);
 
     const response: QueryResponse = {
       success: !error,

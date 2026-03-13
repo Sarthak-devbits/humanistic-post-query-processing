@@ -137,6 +137,7 @@ export interface SubTaskResult {
 
 export interface QueryState {
   query: string;
+  tenantId: string; // Xero organisation ID — scopes all DB queries
   subTasks: SubTask[];
   currentTaskIndex: number;
   schemaContext: SchemaContext | null;
@@ -154,6 +155,7 @@ export interface QueryState {
 
 export interface QueryRequest {
   query: string;
+  tenantId: string; // Required — Xero organisation tenant ID
 }
 
 export interface QueryResponse {

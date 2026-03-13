@@ -1,775 +1,919 @@
 # ┌─────────────────────────────────────────────────────────────────────────────┐
-# │  SCHEMA DESCRIPTIONS — DVD Rental Database                                 │
-# │  NeonDB PostgreSQL sample database                                         │
+# │  AUTO-GENERATED SCHEMA DESCRIPTIONS                                        │
+# │  Generated: 2026-03-12T09:24:51.776Z                                │
 # │                                                                            │
-# │  The AI agents use these descriptions to understand the business meaning   │
-# │  of each table and column when generating SQL queries.                     │
+# │  Fill in the "description" and "business_context" fields for each table    │
+# │  and column. The AI agents use this to write accurate SQL queries.         │
 # └─────────────────────────────────────────────────────────────────────────────┘
 
 tables:
-  # ═══════════════════════════════════════════════════════════════════════════
-  # CORE PEOPLE
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  - name: actor
-    description: "Actors who appear in films. Contains biographical info."
-    business_context: "Not directly used in financial analysis. Useful for content-level reporting (e.g., which actors generate the most rental revenue)."
-    columns:
-      - name: actor_id
-        type: integer
-        description: "Primary key. Unique identifier for each actor."
-        role: primary_key
-      - name: first_name
-        type: character varying
-        description: "Actor's first name."
-        required: true
-      - name: last_name
-        type: character varying
-        description: "Actor's last name."
-        required: true
-      - name: last_update
-        type: timestamp without time zone
-        description: "Timestamp of the last modification to this record."
-        required: true
-
-  - name: actor_info
-    description: "Denormalized view combining actor details with their filmography. Read-only view, not a base table."
-    business_context: "Convenience view for looking up which films an actor has appeared in. Not for financial queries."
-    columns:
-      - name: actor_id
-        type: integer
-        description: "Actor identifier, references actor.actor_id."
-      - name: first_name
-        type: character varying
-        description: "Actor's first name."
-      - name: last_name
-        type: character varying
-        description: "Actor's last name."
-      - name: film_info
-        type: text
-        description: "Comma-separated list of films grouped by category that this actor has appeared in."
-
-  - name: customer
-    description: "Registered customers who rent DVDs. Each customer belongs to a store and has an address."
-    business_context: >
-      Core entity for revenue analysis. Every payment is linked to a customer.
-      Use this table to analyze per-customer spending, identify top customers,
-      or segment by geography via address → city → country joins.
-    columns:
-      - name: customer_id
-        type: integer
-        description: "Primary key. Unique identifier for each customer."
-        role: primary_key
-      - name: store_id
-        type: smallint
-        description: "Which store this customer is registered at. FK → store.store_id."
-        required: true
-      - name: first_name
-        type: character varying
-        description: "Customer's first name."
-        required: true
-      - name: last_name
-        type: character varying
-        description: "Customer's last name."
-        required: true
-      - name: email
-        type: character varying
-        description: "Customer's email address. May be null for older records."
-      - name: address_id
-        type: smallint
-        description: "FK → address.address_id. Links customer to their physical address."
-        role: foreign_key
-        references: "address.address_id"
-        required: true
-      - name: activebool
-        type: boolean
-        description: "Whether the customer account is currently active (true) or inactive (false)."
-        required: true
-      - name: create_date
-        type: date
-        description: "Date when the customer first registered."
-        required: true
-      - name: last_update
-        type: timestamp without time zone
-        description: "Timestamp of the last modification to this record."
-      - name: active
-        type: integer
-        description: "Integer version of active status. 1 = active, 0 = inactive. Redundant with activebool."
-    relationships:
-      - from: customer.address_id
-        to: address.address_id
-        type: many_to_one
-        description: "Each customer has one address for billing/contact purposes."
-
-  - name: customer_list
-    description: "Denormalized view combining customer name, address, city, country, and active status into a flat list."
-    business_context: "Convenience view for quick customer lookups with full address. Use for reports, not for financial aggregation."
+  - name: _prisma_migrations
+    description: "Internal Prisma migration tracking table. Records every database schema migration that has been applied to this database. NOT used for financial analysis — skip this table in all queries."
+    business_context: "Internal infrastructure table only. Never query this table for financial data, reporting, or business intelligence. Always exclude from SQL generation."
     columns:
       - name: id
-        type: integer
-        description: "Customer ID (same as customer.customer_id)."
-      - name: name
-        type: text
-        description: "Full name formatted as 'FIRST_NAME LAST_NAME'."
-      - name: address
         type: character varying
-        description: "Street address."
-      - name: zip code
-        type: character varying
-        description: "Postal/ZIP code."
-      - name: phone
-        type: character varying
-        description: "Phone number."
-      - name: city
-        type: character varying
-        description: "City name."
-      - name: country
-        type: character varying
-        description: "Country name."
-      - name: notes
-        type: text
-        description: "'active' or 'inactive' based on customer status."
-      - name: sid
-        type: smallint
-        description: "Store ID the customer belongs to."
-
-  - name: staff
-    description: "Employees who work at the stores, process rentals, and handle payments."
-    business_context: "Used for staff performance analysis — which staff member processed the most rentals or collected the most revenue."
-    columns:
-      - name: staff_id
-        type: integer
-        description: "Primary key. Unique identifier for each staff member."
+        description: "Unique identifier for this migration record."
         role: primary_key
-      - name: first_name
+      - name: checksum
         type: character varying
-        description: "Staff member's first name."
+        description: "SHA-256 checksum of the migration file content, used to detect if a migration file has been modified after being applied."
         required: true
-      - name: last_name
+      - name: finished_at
+        type: timestamp with time zone
+        description: "Timestamp when the migration finished executing. NULL if the migration is still in progress or failed."
+      - name: migration_name
         type: character varying
-        description: "Staff member's last name."
+        description: "Human-readable name of the migration file, e.g. '20260309_initial_schema'. Corresponds to the filename in the prisma/migrations directory."
         required: true
-      - name: address_id
-        type: smallint
-        description: "FK → address.address_id. Staff member's home address."
-        role: foreign_key
-        references: "address.address_id"
+      - name: logs
+        type: text
+        description: "Output logs captured during migration execution. Contains SQL statements executed and any warnings."
+      - name: rolled_back_at
+        type: timestamp with time zone
+        description: "Timestamp when this migration was rolled back. NULL if not rolled back."
+      - name: started_at
+        type: timestamp with time zone
+        description: "Timestamp when the migration started executing."
         required: true
-      - name: email
-        type: character varying
-        description: "Staff member's email address."
-      - name: store_id
-        type: smallint
-        description: "Which store this staff member works at."
+      - name: applied_steps_count
+        type: integer
+        description: "Number of SQL steps successfully applied in this migration. Used to resume partial migrations."
         required: true
-      - name: active
-        type: boolean
-        description: "Whether the staff member is currently employed (true) or not (false)."
-        required: true
-      - name: username
-        type: character varying
-        description: "Login username for the rental system."
-        required: true
-      - name: password
-        type: character varying
-        description: "Hashed password. Never expose in queries."
-      - name: last_update
-        type: timestamp without time zone
-        description: "Timestamp of the last modification to this record."
-        required: true
-      - name: picture
-        type: bytea
-        description: "Staff member's photo (binary). Not useful for SQL queries."
-    relationships:
-      - from: staff.address_id
-        to: address.address_id
-        type: many_to_one
-        description: "Each staff member has one home address."
 
-  - name: staff_list
-    description: "Denormalized view of staff with full address details in a flat format."
-    business_context: "Convenience view for staff directory lookups. Not for financial queries."
+  - name: xero_accounts
+    description: "Stores the Chart of Accounts from Xero — the complete list of ledger accounts used by the organisation for bookkeeping. Each row is one account (e.g. Sales Revenue, Bank Account, Accounts Payable). Accounts are the backbone of double-entry accounting: every financial transaction in Xero is posted to one or more accounts."
+    business_context: "Use this table to look up account names, types, and classifications when analysing journal entries or transaction breakdowns. Useful for categorising revenue vs expenses, understanding which accounts are asset/liability/equity/revenue/expense, and filtering transactions by account type. Key for P&L and balance sheet analysis."
     columns:
       - name: id
-        type: integer
-        description: "Staff ID (same as staff.staff_id)."
+        type: uuid
+        description: "Internal UUID primary key generated by the application (gen_random_uuid). Not the Xero AccountID."
+        role: primary_key
+      - name: accountId
+        type: text
+        description: "The Xero AccountID — a UUID assigned by Xero that uniquely identifies this account within Xero's system. Use this to join with journal lines or other Xero data that references accounts."
+        role: foreign_key
+        required: true
+      - name: tenantId
+        type: text
+        description: "The Xero Tenant ID (organisation identifier) this account belongs to. All data in the system is scoped per tenant; always filter by tenantId when querying to avoid mixing accounts from different organisations."
+        required: true
+      - name: xeroUserId
+        type: text
+        description: "The internal user ID of the platform user who connected this Xero organisation. Links back to xero_connections. Use tenantId for organisation-level filtering; xeroUserId is for user-session context."
+        required: true
+      - name: code
+        type: text
+        description: "The account code — a short alphanumeric identifier (e.g. '200', 'ACC001') used by the organisation to identify accounts in their chart of accounts. Often displayed in financial reports alongside the name."
       - name: name
         type: text
-        description: "Full name formatted as 'FIRST_NAME LAST_NAME'."
-      - name: address
-        type: character varying
-        description: "Street address."
-      - name: zip code
-        type: character varying
-        description: "Postal/ZIP code."
-      - name: phone
-        type: character varying
-        description: "Phone number."
-      - name: city
-        type: character varying
-        description: "City name."
-      - name: country
-        type: character varying
-        description: "Country name."
-      - name: sid
-        type: smallint
-        description: "Store ID the staff member works at."
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # FILM CATALOG
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  - name: film
-    description: >
-      The DVD catalog. Each row is one film available for rental.
-      Contains pricing, duration, and classification info.
-    business_context: >
-      Use rental_rate for revenue-per-rental analysis.
-      Use replacement_cost for inventory valuation.
-      Join with film_category to analyze revenue by genre.
-    columns:
-      - name: film_id
-        type: integer
-        description: "Primary key. Unique identifier for each film."
-        role: primary_key
-      - name: title
-        type: character varying
-        description: "Film title."
+        description: "The human-readable name of the account (e.g. 'Sales', 'Bank Account', 'Accounts Payable', 'Office Expenses'). Use this for display in reports and labels rather than accountId or code."
         required: true
       - name: description
         type: text
-        description: "Plot summary / synopsis of the film."
-      - name: release_year
-        type: integer
-        description: "Year the film was released."
-      - name: language_id
-        type: smallint
-        description: "FK → language.language_id. The primary language of the film."
-        role: foreign_key
-        references: "language.language_id"
+        description: "Optional free-text description of the account's purpose, as defined by the user in Xero."
+      - name: accountClass
+        type: text
+        description: "The high-level class of the account. Xero values: ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE. Determines which section of the balance sheet or P&L this account appears in. Use for broad financial category filtering."
+        examples: ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"]
+      - name: accountType
+        type: text
+        description: "The specific type of account within its class. More granular than accountClass. Examples: BANK (liquid cash accounts), CURRENT (current assets), FIXED (fixed assets), CURRLIAB (current liabilities), SALES (revenue from sales), OVERHEADS (fixed overhead expenses), DEPRECIATN (depreciation). Used for detailed balance sheet categorisation."
+        examples:
+          [
+            "BANK",
+            "CURRENT",
+            "FIXED",
+            "CURRLIAB",
+            "TERMLIAB",
+            "EQUITY",
+            "SALES",
+            "REVENUE",
+            "DIRECTCOSTS",
+            "OVERHEADS",
+            "DEPRECIATN",
+            "OTHERINCOME",
+            "OTHEREXPENSE",
+          ]
+      - name: taxType
+        type: text
+        description: "The default tax rate applied to transactions posted to this account. E.g. 'TAX001' for standard GST/VAT, 'NONE' for zero-rated or exempt. Affects how tax is calculated on invoices and bills."
+      - name: enablePaymentsToAccount
+        type: boolean
+        description: "True if this account can be used as the destination for payments (i.e. a bank or clearing account that can receive payments). Must be true to use this account in the 'paid to' field on an invoice payment."
         required: true
-      - name: rental_duration
-        type: smallint
-        description: "Number of days a rental lasts before it's considered late. Default is typically 3-7 days."
+      - name: showInExpenseClaims
+        type: boolean
+        description: "True if this account appears in the expense claims module, allowing employees to assign expenses to it when submitting expense claims."
         required: true
-      - name: rental_rate
+      - name: status
+        type: text
+        description: "Account status in Xero. Values: ACTIVE (account is in use), ARCHIVED (account has been disabled/hidden but data is preserved). Only ACTIVE accounts are available for new transactions."
+        examples: ["ACTIVE", "ARCHIVED"]
+      - name: updatedDateUtc
+        type: timestamp without time zone
+        description: "The timestamp (UTC) when this account was last modified in Xero. Set by Xero, not by our system."
+      - name: createdAt
+        type: timestamp without time zone
+        description: "Timestamp when this row was first inserted into our local database (not the Xero creation date)."
+        required: true
+      - name: updatedAt
+        type: timestamp without time zone
+        description: "Timestamp when this row was last updated in our local database, auto-managed by Prisma on every upsert."
+        required: true
+
+  - name: xero_bank_transactions
+    description: "Stores spend/receive money transactions recorded directly against a bank account in Xero — i.e. bank transactions that are NOT associated with an invoice or bill (direct bank account debits and credits). Examples: direct bank fees, direct deposits, petty cash withdrawals. Each row represents one bank transaction with its line items."
+    business_context: "Use this table to analyse cash movements at the bank account level, including unmatched or direct transactions. Useful for cash flow analysis, bank reconciliation status (isReconciled), and finding transactions by contact. Complement with xero_invoices and xero_payments for the full cash picture. Filter by type to separate money in (RECEIVE) from money out (SPEND)."
+    columns:
+      - name: id
+        type: uuid
+        description: "Internal UUID primary key generated by the application."
+        role: primary_key
+      - name: compositeId
+        type: text
+        description: "Unique composite key formed by concatenating bankTransactionId and tenantId (format: '{bankTransactionId}_{tenantId}'). Ensures uniqueness across multi-tenant setups and used as the upsert key during sync."
+        required: true
+      - name: bankTransactionId
+        type: text
+        description: "The Xero BankTransactionID — a UUID assigned by Xero uniquely identifying this bank transaction within the organisation."
+        required: true
+      - name: tenantId
+        type: text
+        description: "The Xero Tenant ID scoping this transaction to a specific organisation. Always filter by tenantId to isolate data for a single organisation."
+        required: true
+      - name: xeroUserId
+        type: text
+        description: "The platform user ID who owns the Xero connection. Use tenantId for financial queries; xeroUserId is for session/user context."
+        required: true
+      - name: type
+        type: text
+        description: "Direction of the bank transaction. RECEIVE = money coming into the bank account (income/deposit). SPEND = money going out of the bank account (expense/withdrawal). Use to separate inflows from outflows in cash analysis."
+        examples: ["RECEIVE", "SPEND"]
+      - name: contactName
+        type: text
+        description: "The name of the contact (supplier or customer) associated with this transaction. Denormalised from the contact record for query convenience. May be NULL for transactions with no linked contact."
+      - name: bankAccount
+        type: jsonb
+        description: "JSON object containing details of the bank account this transaction is posted to. Includes fields like AccountID (Xero account UUID), Code (account code), and Name (bank account name, e.g. 'Business Cheque Account'). Use bankAccount->>'Name' to display the bank account name."
+      - name: date
+        type: timestamp without time zone
+        description: "The date of the bank transaction — when the money movement occurred. Use for time-series analysis and date filtering."
+      - name: reference
+        type: text
+        description: "An optional reference string entered by the user on this transaction (e.g. cheque number, payment reference). Useful for searching specific transactions."
+      - name: subTotal
         type: numeric
-        description: >
-          Price charged per rental in USD.
-          Typical values: 0.99, 2.99, 4.99.
-          This is the BASE PRICE for renting this film.
+        description: "The transaction amount before tax (exclusive of tax). Stored as DECIMAL(18,4). Use for net amount analysis."
         required: true
-        examples: ["0.99", "2.99", "4.99"]
-      - name: length
-        type: smallint
-        description: "Film duration in minutes."
-      - name: replacement_cost
+      - name: totalTax
         type: numeric
-        description: >
-          Cost to replace the DVD if lost or damaged.
-          Represents inventory asset value.
-          Typical values: 9.99 to 29.99.
+        description: "The total tax amount on this transaction. Stored as DECIMAL(18,4). Add to subTotal to get the gross total."
         required: true
-        examples: ["9.99", "19.99", "29.99"]
-      - name: rating
-        type: USER-DEFINED
-        description: "MPAA rating: 'G', 'PG', 'PG-13', 'R', 'NC-17'. Stored as a custom enum type."
-      - name: last_update
+      - name: total
+        type: numeric
+        description: "The gross total of the transaction including tax (subTotal + totalTax). Stored as DECIMAL(18,4). This is the actual amount that moved through the bank account. Use ROUND(total, 2) for monetary display."
+        required: true
+      - name: lineItems
+        type: jsonb
+        description: "JSON array of line items within this bank transaction. Each line item includes Description, Quantity, UnitAmount, AccountCode, TaxType, and LineAmount. Use for detailed expense categorisation by account code."
+      - name: isReconciled
+        type: boolean
+        description: "True if this bank transaction has been reconciled against a bank statement in Xero. False if it is still unreconciled. Use to filter reconciled vs pending transactions."
+        required: true
+      - name: currencyCode
+        type: text
+        description: "ISO 4217 currency code for this transaction (e.g. 'AUD', 'USD', 'GBP'). Matches the currency of the bank account."
+      - name: updatedDateUtc
         type: timestamp without time zone
-        description: "Timestamp of the last modification to this record."
-        required: true
-      - name: special_features
-        type: ARRAY
-        description: "Array of special features on the DVD: 'Trailers', 'Commentaries', 'Deleted Scenes', 'Behind the Scenes'."
-      - name: fulltext
-        type: tsvector
-        description: "Full-text search vector for title and description. Used internally by PostgreSQL search, not for SQL queries."
-        required: true
-    relationships:
-      - from: film.language_id
-        to: language.language_id
-        type: many_to_one
-        description: "Each film has one primary language."
-
-  - name: film_actor
-    description: "Junction table linking films to actors. Many-to-many relationship."
-    business_context: "Use to find which actors are in which films. Join with payment/rental to analyze revenue per actor."
-    columns:
-      - name: actor_id
-        type: smallint
-        description: "FK → actor.actor_id. The actor in this film."
-        role: primary_key
-      - name: film_id
-        type: smallint
-        description: "FK → film.film_id. The film this actor appears in."
-        role: primary_key
-      - name: last_update
+        description: "Timestamp (UTC) when this transaction was last updated in Xero."
+      - name: createdAt
         type: timestamp without time zone
-        description: "Timestamp of the last modification to this record."
+        description: "Timestamp when this row was first written to our local database."
         required: true
-    relationships:
-      - from: film_actor.actor_id
-        to: actor.actor_id
-        type: many_to_one
-        description: "Links to the actor record."
-      - from: film_actor.film_id
-        to: film.film_id
-        type: many_to_one
-        description: "Links to the film record."
-
-  - name: film_category
-    description: "Junction table linking films to categories (genres). Each film belongs to exactly one category."
-    business_context: >
-      Essential for 'revenue by genre' analysis.
-      Join path: payment → rental → inventory → film → film_category → category.
-    columns:
-      - name: film_id
-        type: smallint
-        description: "FK → film.film_id."
-        role: primary_key
-      - name: category_id
-        type: smallint
-        description: "FK → category.category_id."
-        role: primary_key
-      - name: last_update
+      - name: updatedAt
         type: timestamp without time zone
-        description: "Timestamp of the last modification to this record."
+        description: "Timestamp of the last local database update, auto-managed by Prisma."
         required: true
-    relationships:
-      - from: film_category.category_id
-        to: category.category_id
-        type: many_to_one
-        description: "Links to the genre/category."
-      - from: film_category.film_id
-        to: film.film_id
-        type: many_to_one
-        description: "Links to the film."
 
-  - name: film_list
-    description: "Denormalized view combining film details with category and actors into a flat list."
-    business_context: "Quick film lookup view. For financial queries, prefer joining base tables directly."
+  - name: xero_connections
+    description: "Stores OAuth 2.0 connection credentials linking a platform user to a specific Xero organisation (tenant). Each row represents one active Xero connection — a user may have multiple rows if they connected multiple Xero organisations. This table holds the access/refresh tokens required to call the Xero API on behalf of the user."
+    business_context: "This is an authentication/infrastructure table. Do NOT query it for financial data. Use it only to understand which tenantId belongs to which user (xeroUserId), or to check connection/sync status. Financial analysis queries should always filter by tenantId from the specific Xero data tables."
     columns:
-      - name: fid
-        type: integer
-        description: "Film ID (same as film.film_id)."
-      - name: title
-        type: character varying
-        description: "Film title."
+      - name: id
+        type: text
+        description: "Internal UUID primary key for this connection record."
+        role: primary_key
+      - name: tenantId
+        type: text
+        description: "The Xero Tenant ID — the unique identifier for the connected Xero organisation. This is the primary multi-tenancy key used across ALL Xero data tables to scope data to one organisation."
+        required: true
+      - name: xeroUserId
+        type: text
+        description: "The Xero user ID returned by Xero's identity service. Identifies which Xero user account (not the platform user) made this connection. Combined with tenantId forms a unique connection."
+        required: true
+      - name: tenantName
+        type: text
+        description: "The human-readable name of the connected Xero organisation (e.g. 'Demo Company (AU)'). Use this to display which organisation is connected."
+      - name: tenantType
+        type: text
+        description: "The type of Xero tenant. Typically 'ORGANISATION' for standard Xero organisations."
+        examples: ["ORGANISATION"]
+      - name: accessToken
+        type: text
+        description: "The OAuth 2.0 access token used to authenticate API calls to Xero. Short-lived (30 minutes). NEVER expose this in queries or responses — for internal use only."
+        required: true
+      - name: refreshToken
+        type: text
+        description: "The OAuth 2.0 refresh token used to obtain a new access token when it expires. Long-lived. NEVER expose this in queries or responses — for internal use only."
+        required: true
+      - name: idToken
+        type: text
+        description: "The OpenID Connect ID token returned by Xero, containing identity claims about the connected user. Used for user profile information."
+      - name: tokenExpiry
+        type: timestamp without time zone
+        description: "The datetime when the current accessToken expires. The sync service checks this to know when to refresh the token before making API calls."
+      - name: scopes
+        type: text
+        description: "Space-separated list of OAuth scopes granted by the user (e.g. 'openid profile email accounting.transactions accounting.contacts'). Determines which Xero API endpoints this connection can access."
+      - name: syncStatus
+        type: text
+        description: "Current data sync state for this connection. Values: 'idle' (no sync running), 'syncing' (sync in progress), 'error' (last sync failed). Use to check if a tenant's data is up to date."
+        examples: ["idle", "syncing", "error"]
+        required: true
+      - name: lastSyncedAt
+        type: timestamp without time zone
+        description: "Timestamp of the most recent successful data sync for this connection. NULL if never synced. Use to determine data freshness."
+      - name: connectedAt
+        type: timestamp without time zone
+        description: "Timestamp when the user first connected this Xero organisation to the platform."
+        required: true
+      - name: updatedAt
+        type: timestamp without time zone
+        description: "Timestamp of the last update to this connection record (e.g. token refresh), auto-managed by Prisma."
+        required: true
+
+  - name: xero_contacts
+    description: "Stores all contacts (customers and suppliers) from the Xero organisation. A contact in Xero is any person or business that the organisation transacts with — customers who pay invoices (ACCREC type) and/or suppliers who send bills (ACCPAY type). Each row is one contact with their identity, address, and tax info."
+    business_context: "Use this table to resolve contact names in reports, segment by customer vs supplier (isCustomer / isSupplier flags), or find all transactions for a specific business. Join to xero_invoices on contactName (denormalised) or use as a lookup for contact details. Essential for accounts receivable (customer analysis) and accounts payable (supplier analysis)."
+    columns:
+      - name: id
+        type: uuid
+        description: "Internal UUID primary key generated by the application."
+        role: primary_key
+      - name: contactId
+        type: text
+        description: "The Xero ContactID — a UUID assigned by Xero that uniquely identifies this contact within the organisation. Use this to link contacts to invoices, payments, or bank transactions."
+        required: true
+      - name: tenantId
+        type: text
+        description: "The Xero Tenant ID scoping this contact to a specific organisation. Always filter by tenantId when querying contacts."
+        required: true
+      - name: xeroUserId
+        type: text
+        description: "The platform user ID who owns the Xero connection. Use tenantId for financial queries."
+        required: true
+      - name: name
+        type: text
+        description: "The display name of the contact as shown in Xero (e.g. 'Acme Corp', 'John Smith'). This is the primary identifier for a contact — use this for display in reports. Indexed for fast name searches."
+        required: true
+      - name: emailAddress
+        type: text
+        description: "The primary email address of the contact. Used for sending invoices and statements."
+      - name: companyNumber
+        type: text
+        description: "The company registration number or business registration number for the contact. May be NULL for individuals."
+      - name: isSupplier
+        type: boolean
+        description: "True if this contact is a supplier (the organisation buys from them and receives bills from them). A contact can be both a supplier and a customer simultaneously."
+        required: true
+      - name: isCustomer
+        type: boolean
+        description: "True if this contact is a customer (the organisation sells to them and issues invoices to them). A contact can be both a customer and a supplier simultaneously."
+        required: true
+      - name: address
+        type: text
+        description: "Concatenated string representation of the contact's primary address (e.g. '123 Main St, Sydney NSW 2000, Australia'). Flattened from Xero's addresses array for query convenience."
+      - name: phone
+        type: text
+        description: "Concatenated string of the contact's primary phone number. Flattened from Xero's phones array."
+      - name: taxNumber
+        type: text
+        description: "The tax/VAT/GST registration number for this contact (e.g. ABN in Australia). Used for tax compliance and reporting."
+      - name: accountNumber
+        type: text
+        description: "An internal account number assigned to this contact by the organisation (e.g. 'CUST-0042'). Organisation-defined, not a Xero system field."
+      - name: updatedDateUtc
+        type: timestamp without time zone
+        description: "Timestamp (UTC) when this contact was last updated in Xero."
+      - name: createdAt
+        type: timestamp without time zone
+        description: "Timestamp when this row was first written to our local database."
+        required: true
+      - name: updatedAt
+        type: timestamp without time zone
+        description: "Timestamp of the last local database update, auto-managed by Prisma."
+        required: true
+
+  - name: xero_credit_notes
+    description: "Stores credit notes issued in Xero. A credit note is a document that reduces the amount owed by a customer (ACCRECCREDIT — accounts receivable credit) or reduces the amount owed to a supplier (ACCPAYCREDIT — accounts payable credit). Credit notes are typically issued to correct or partially/fully reverse an invoice or bill — e.g. goods returned, overcharge correction."
+    business_context: "Use this table to calculate net revenue by subtracting credit note totals from invoice totals. Critical for accurate revenue and refund analysis. Segment by type to analyse customer refunds (ACCRECCREDIT) vs supplier credit notes received (ACCPAYCREDIT). Joining to xero_invoices on contactName gives the full invoice-to-credit-note picture for a customer."
+    columns:
+      - name: id
+        type: uuid
+        description: "Internal UUID primary key generated by the application."
+        role: primary_key
+      - name: compositeId
+        type: text
+        description: "Unique composite key formed by concatenating creditNoteId and tenantId. Used as the upsert key during sync to ensure idempotent inserts."
+        required: true
+      - name: creditNoteId
+        type: text
+        description: "The Xero CreditNoteID — a UUID assigned by Xero uniquely identifying this credit note within the organisation."
+        required: true
+      - name: tenantId
+        type: text
+        description: "The Xero Tenant ID scoping this credit note to a specific organisation. Always filter by tenantId."
+        required: true
+      - name: xeroUserId
+        type: text
+        description: "The platform user ID who owns the Xero connection. Use tenantId for financial queries."
+        required: true
+      - name: type
+        type: text
+        description: "The credit note direction. ACCRECCREDIT = credit note issued TO a customer (reduces what they owe, i.e. a customer refund). ACCPAYCREDIT = credit note received FROM a supplier (reduces what we owe them). Essential for AR vs AP analysis."
+        examples: ["ACCRECCREDIT", "ACCPAYCREDIT"]
+      - name: creditNoteNumber
+        type: text
+        description: "The human-readable credit note number (e.g. 'CN-0042') as displayed in Xero. User-defined or auto-generated by Xero."
+      - name: contactName
+        type: text
+        description: "The name of the customer or supplier this credit note is for. Denormalised from the contact record for query convenience."
+      - name: status
+        type: text
+        description: "The current status of the credit note. DRAFT = not yet submitted. SUBMITTED = awaiting approval. AUTHORISED = approved and active. PAID = fully allocated against invoices. VOIDED = cancelled."
+        examples: ["DRAFT", "SUBMITTED", "AUTHORISED", "PAID", "VOIDED"]
+      - name: date
+        type: timestamp without time zone
+        description: "The date the credit note was issued. Use for time-series analysis of refunds."
+      - name: dueDate
+        type: timestamp without time zone
+        description: "For credit notes, this stores the fully paid/allocated date (FullyPaidOnDate in Xero) — the date on which the credit note was fully applied to invoices or refunded."
+      - name: subTotal
+        type: numeric
+        description: "The credit note amount before tax. Stored as DECIMAL(18,4). Represents the net value of goods/services being credited."
+        required: true
+      - name: totalTax
+        type: numeric
+        description: "The total tax amount on this credit note. Stored as DECIMAL(18,4)."
+        required: true
+      - name: total
+        type: numeric
+        description: "The gross total of this credit note including tax (subTotal + totalTax). Stored as DECIMAL(18,4). This is the net amount by which receivables/payables are reduced. Use ROUND(total, 2) for display."
+        required: true
+      - name: lineItems
+        type: jsonb
+        description: "Full JSON array of line items on this credit note. Each item includes Description, Quantity, UnitAmount, AccountCode, TaxType, TaxAmount, and LineAmount. Use for detailed product/service breakdown of credits."
       - name: description
         type: text
-        description: "Plot summary."
-      - name: category
-        type: character varying
-        description: "Genre name (e.g., 'Action', 'Comedy', 'Drama')."
-      - name: price
+        description: "Description of the first line item on the credit note, denormalised for query convenience (avoids JSON parsing for simple queries)."
+      - name: quantity
         type: numeric
-        description: "Rental rate in USD (same as film.rental_rate)."
-      - name: length
-        type: smallint
-        description: "Film duration in minutes."
-      - name: rating
-        type: USER-DEFINED
-        description: "MPAA rating (G, PG, PG-13, R, NC-17)."
-      - name: actors
+        description: "Quantity from the first line item. Denormalised for query convenience."
+      - name: unitAmount
+        type: numeric
+        description: "Unit price from the first line item. Denormalised for query convenience."
+      - name: updatedDateUtc
+        type: timestamp without time zone
+        description: "Timestamp (UTC) when this credit note was last updated in Xero."
+      - name: createdAt
+        type: timestamp without time zone
+        description: "Timestamp when this row was first written to our local database."
+        required: true
+      - name: updatedAt
+        type: timestamp without time zone
+        description: "Timestamp of the last local database update, auto-managed by Prisma."
+        required: true
+
+  - name: xero_invoices
+    description: "THE most important financial table. Stores all invoices and bills in the Xero organisation. An invoice in Xero can be one of two types: ACCREC (Accounts Receivable — a sales invoice issued TO a customer, money coming IN) or ACCPAY (Accounts Payable — a purchase bill received FROM a supplier, money going OUT). Each row represents one complete invoice/bill with its financial totals."
+    business_context: "This is the primary table for revenue and expense analysis. Use ACCREC invoices for sales/revenue queries and ACCPAY invoices for purchase/expense queries. Key metrics: total (gross), subTotal (net), amountDue (outstanding AR/AP), amountPaid (collected). Join with xero_payments to reconcile payments, or with xero_credit_notes to calculate net revenue. Filter by status=AUTHORISED for approved transactions only. Essential for P&L, AR aging, AP aging, customer revenue ranking, and supplier spend analysis."
+    sample_queries:
+      - description: "Total revenue from sales invoices"
+        sql: "SELECT SUM(total) FROM xero_invoices WHERE type = 'ACCREC' AND status = 'AUTHORISED' AND tenantId = '...'"
+      - description: "Outstanding receivables (unpaid)"
+        sql: "SELECT contactName, SUM(amountDue) FROM xero_invoices WHERE type = 'ACCREC' AND amountDue > 0 GROUP BY contactName ORDER BY SUM(amountDue) DESC"
+    columns:
+      - name: id
+        type: uuid
+        description: "Internal UUID primary key generated by the application."
+        role: primary_key
+      - name: compositeId
         type: text
-        description: "Comma-separated list of actor names in this film."
+        description: "Unique composite key formed by concatenating invoiceId and tenantId. Used as the upsert key during sync."
+        required: true
+      - name: invoiceId
+        type: text
+        description: "The Xero InvoiceID — a UUID assigned by Xero uniquely identifying this invoice/bill within the organisation."
+        required: true
+      - name: tenantId
+        type: text
+        description: "The Xero Tenant ID scoping this invoice to a specific organisation. ALWAYS filter by tenantId to avoid mixing data across organisations."
+        required: true
+      - name: xeroUserId
+        type: text
+        description: "The platform user ID who owns the Xero connection. Use tenantId for financial queries."
+        required: true
+      - name: type
+        type: text
+        description: "The invoice type — the MOST IMPORTANT field for categorisation. ACCREC = Accounts Receivable = sales invoice issued to customers (revenue). ACCPAY = Accounts Payable = purchase bill received from suppliers (expense). Always filter by type when doing revenue or expense analysis."
+        examples: ["ACCREC", "ACCPAY"]
+      - name: contactName
+        type: text
+        description: "The name of the customer (for ACCREC) or supplier (for ACCPAY) on this invoice. Denormalised from xero_contacts for query convenience. Use for grouping by customer/supplier."
+      - name: invoiceNumber
+        type: text
+        description: "The human-readable invoice number (e.g. 'INV-0042' for sales, 'BILL-0001' for purchases). User-defined or auto-generated by Xero. Use for display and reference lookups."
+      - name: reference
+        type: text
+        description: "Optional reference number entered by the user (e.g. purchase order number, customer PO, bank reference). Useful for cross-referencing with external systems."
+      - name: status
+        type: text
+        description: "The approval and payment status of the invoice. DRAFT = not yet submitted. SUBMITTED = awaiting approval. AUTHORISED = approved and active invoice (use this for financial analysis). PAID = fully paid. VOIDED = cancelled. DELETED = removed. For financial analysis, typically filter WHERE status IN ('AUTHORISED', 'PAID')."
+        examples:
+          ["DRAFT", "SUBMITTED", "AUTHORISED", "PAID", "VOIDED", "DELETED"]
+      - name: date
+        type: timestamp without time zone
+        description: "The invoice date — the date the invoice/bill was raised. Use DATE_TRUNC for monthly/yearly aggregations. This is the primary date field for time-series revenue/expense analysis."
+      - name: dueDate
+        type: timestamp without time zone
+        description: "The payment due date. Use this for AR/AP aging analysis: CURRENT_DATE - dueDate gives days overdue. NULL means no due date was set."
+      - name: fullyPaidOnDate
+        type: timestamp without time zone
+        description: "The date on which this invoice was fully paid (amountDue = 0). NULL if still unpaid. Use this for payment timing analysis and days-to-pay metrics."
+      - name: subTotal
+        type: numeric
+        description: "The invoice total before tax (net of tax). Stored as DECIMAL(18,4). Use for ex-tax revenue/expense analysis."
+        role: metric
+        required: true
+      - name: totalTax
+        type: numeric
+        description: "The total GST/VAT/tax component on this invoice. Stored as DECIMAL(18,4). subTotal + totalTax = total."
+        role: metric
+        required: true
+      - name: total
+        type: numeric
+        description: "The gross total of this invoice including all taxes (subTotal + totalTax). Stored as DECIMAL(18,4). This is the headline revenue/expense figure. Use ROUND(total, 2) for display. SUM(total) for ACCREC invoices = gross revenue."
+        role: metric
+        required: true
+      - name: amountDue
+        type: numeric
+        description: "The amount still outstanding/unpaid on this invoice. Stored as DECIMAL(18,4). For ACCREC: this is the accounts receivable balance. For ACCPAY: this is the accounts payable balance. amountDue = total - amountPaid - credit notes applied. Zero means fully paid."
+        role: metric
+        required: true
+      - name: amountPaid
+        type: numeric
+        description: "The total amount that has already been paid/collected against this invoice. Stored as DECIMAL(18,4). For ACCREC: cash actually received. amountPaid + amountDue = total (approximately, before credit notes)."
+        role: metric
+        required: true
+      - name: description
+        type: text
+        description: "Description text from the first line item on the invoice. Denormalised for query convenience — gives a quick summary of what was sold/purchased without needing to parse lineItems JSON."
+      - name: quantity
+        type: numeric
+        description: "Quantity from the first line item. Denormalised for query convenience."
+      - name: unitAmount
+        type: numeric
+        description: "Unit price from the first line item. Denormalised for query convenience. unitAmount * quantity ≈ line item subtotal."
+      - name: currencyCode
+        type: text
+        description: "ISO 4217 currency code for this invoice (e.g. 'AUD', 'USD', 'GBP', 'NZD'). All monetary values (total, amountDue, etc.) are in this currency."
+      - name: updatedDateUtc
+        type: timestamp without time zone
+        description: "Timestamp (UTC) when this invoice was last updated in Xero."
+      - name: createdAt
+        type: timestamp without time zone
+        description: "Timestamp when this row was first written to our local database."
+        required: true
+      - name: updatedAt
+        type: timestamp without time zone
+        description: "Timestamp of the last local database update, auto-managed by Prisma."
+        required: true
 
-  - name: category
-    description: "Film genres/categories like Action, Comedy, Drama, Horror, etc."
-    business_context: "Used to group films by genre for revenue-by-category analysis."
+  - name: xero_items
+    description: "Stores the product and service catalogue (Items) from the Xero organisation. An Item in Xero is a pre-defined product or service that can be added to invoices, bills, and purchase orders — similar to a price list or SKU catalogue. Items can be tracked as inventory (stock levels maintained) or non-tracked (services/non-stock goods)."
+    business_context: "Use this table to analyse product-level sales or purchase costs, look up standard pricing, or identify inventory levels. Join to invoice line items (via xero_invoices lineItems JSON, matching on item code) for product revenue breakdown. Use isTrackedAsInventory=true to filter physical stock items vs services. Use quantityOnHand for stock/inventory analysis."
     columns:
-      - name: category_id
-        type: integer
-        description: "Primary key. Unique identifier for each category."
+      - name: id
+        type: uuid
+        description: "Internal UUID primary key generated by the application."
         role: primary_key
+      - name: itemId
+        type: text
+        description: "The Xero ItemID — a UUID assigned by Xero that uniquely identifies this item within the organisation's product catalogue."
+        required: true
+      - name: tenantId
+        type: text
+        description: "The Xero Tenant ID scoping this item to a specific organisation. Always filter by tenantId."
+        required: true
+      - name: xeroUserId
+        type: text
+        description: "The platform user ID who owns the Xero connection. Use tenantId for financial queries."
+        required: true
+      - name: code
+        type: text
+        description: "The item code / SKU — a short alphanumeric identifier (e.g. 'PROD-001', 'SVC-CONSULT') used on invoices and bills. This is the primary lookup key when referencing items in line items."
       - name: name
-        type: character varying
-        description: "Category name. Values include: Action, Animation, Children, Classics, Comedy, Documentary, Drama, Family, Foreign, Games, Horror, Music, New, Sci-Fi, Sports, Travel."
+        type: text
+        description: "The display name of the item (e.g. 'Website Design Package', 'Office Chair', 'Monthly Support'). Shown on invoices and bills. Use this for display in product/service reports."
+      - name: description
+        type: text
+        description: "Default description text that pre-fills on invoice/bill line items when this item is selected. Describes what the item is or what service is rendered."
+      - name: inventoryAssetAccountCode
+        type: text
+        description: "The account code of the balance sheet asset account used to track the inventory value of this item (e.g. '630' for Inventory Asset). Only relevant when isTrackedAsInventory = true."
+      - name: purchaseDetails
+        type: jsonb
+        description: "JSON object containing purchase-side details for this item: UnitPrice (purchase cost), AccountCode (expense account to post purchases to), TaxType (purchase tax rate), COGSAccountCode (Cost of Goods Sold account). Use for margin analysis: compare purchase unitPrice to selling unitPrice."
+      - name: unitPrice
+        type: numeric
+        description: "The default selling price of this item (excluding tax). Stored as DECIMAL(18,4). This is the price that pre-fills on sales invoices when this item is added. Use for price list analysis."
+      - name: totalCostPool
+        type: numeric
+        description: "The total cost pool value of tracked inventory (total cost of all units on hand). Stored as DECIMAL(18,4). totalCostPool / quantityOnHand gives the average unit cost. Relevant only when isTrackedAsInventory = true."
+      - name: quantityOnHand
+        type: numeric
+        description: "The current stock quantity on hand for tracked inventory items. Stored as DECIMAL(18,4). NULL or 0 for non-tracked items. Use for inventory level reports and stock valuation."
+      - name: isTrackedAsInventory
+        type: boolean
+        description: "True if Xero actively tracks stock levels (quantity on hand) for this item — meaning it reduces when sold and increases when purchased. False for services or non-stock items where inventory is not tracked."
         required: true
-        examples: ["Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Sports"]
-      - name: last_update
+      - name: updatedDateUtc
         type: timestamp without time zone
-        description: "Timestamp of the last modification to this record."
+        description: "Timestamp (UTC) when this item was last updated in Xero."
+      - name: createdAt
+        type: timestamp without time zone
+        description: "Timestamp when this row was first written to our local database."
+        required: true
+      - name: updatedAt
+        type: timestamp without time zone
+        description: "Timestamp of the last local database update, auto-managed by Prisma."
         required: true
 
-  - name: language
-    description: "Languages available for films."
-    business_context: "Rarely used in financial analysis. Useful for content diversity reports."
+  - name: xero_organisations
+    description: "Stores organisation-level settings and metadata for each connected Xero organisation (tenant). Each row represents one Xero organisation — its legal identity, currency, tax settings, financial year definition, and operational configuration. This is the master record for understanding the context of all financial data."
+    business_context: "Query this table to get organisation-level context needed for correct financial analysis: baseCurrency (for currency display), financialYearEndMonth (to define the financial year for YTD calculations), countryCode (for tax and locale), and periodLockDate (transactions before this date are locked). Always join or filter using tenantId. Use isDemoCompany to exclude test/demo organisations from analysis if needed."
     columns:
-      - name: language_id
-        type: integer
-        description: "Primary key."
+      - name: id
+        type: text
+        description: "Internal UUID primary key generated by the application. Same value as tenantId in this table."
         role: primary_key
+      - name: tenantId
+        type: text
+        description: "The Xero Tenant ID — the unique identifier for this Xero organisation. This is the primary key that links all other Xero tables together. Use this in every cross-table join."
+        required: true
       - name: name
-        type: character
-        description: "Language name (e.g., 'English', 'Italian', 'Japanese')."
+        type: text
+        description: "The trading name / display name of the Xero organisation (e.g. 'Acme Corp', 'My Landscaping Business'). Use this to display the organisation name in reports."
+      - name: legalName
+        type: text
+        description: "The legal/registered name of the organisation, which may differ from the trading name. Used for formal documents and compliance."
+      - name: organisationType
+        type: text
+        description: "The broad type of entity. Typically 'COMPANY', 'SOLE_TRADER', 'PARTNERSHIP', 'TRUST', or 'CHARITY'. Affects some tax and reporting rules."
+        examples:
+          [
+            "COMPANY",
+            "SOLE_TRADER",
+            "PARTNERSHIP",
+            "TRUST",
+            "CHARITY",
+            "NOT_FOR_PROFIT",
+          ]
+      - name: organisationEntityType
+        type: text
+        description: "More granular legal entity type as defined by Xero (e.g. 'COMPANY', 'INDIVIDUAL'). Jurisdiction-specific entity classifications."
+      - name: organisationStatus
+        type: text
+        description: "The operational status of the Xero organisation. 'ACTIVE' for live organisations. May indicate trial or suspended states."
+        examples: ["ACTIVE"]
+      - name: isDemoCompany
+        type: boolean
+        description: "True if this is a Xero demo/sample company (pre-populated with fictional data). Exclude demo companies from real financial analysis by filtering WHERE isDemoCompany = false."
         required: true
-      - name: last_update
+      - name: edition
+        type: text
+        description: "The Xero product edition this organisation is on (e.g. 'BUSINESS', 'PARTNER'). Affects available features."
+      - name: version
+        type: text
+        description: "The country-specific version of Xero (e.g. 'AU' for Australia, 'NZ' for New Zealand, 'GLOBAL' for international). Determines tax terminology and default rates."
+        examples: ["AU", "NZ", "UK", "US", "GLOBAL"]
+      - name: baseCurrency
+        type: text
+        description: "ISO 4217 code for the organisation's base/home currency (e.g. 'AUD', 'USD', 'GBP'). ALL financial amounts in other tables are reported in this currency unless currencyCode says otherwise. Critical for correct currency display."
+        examples: ["AUD", "USD", "GBP", "NZD", "EUR"]
+      - name: countryCode
+        type: text
+        description: "ISO 3166-1 alpha-2 country code (e.g. 'AU', 'US', 'GB'). Determines tax rules, default tax rates, and number formatting."
+      - name: timezone
+        type: text
+        description: "The IANA timezone identifier for this organisation (e.g. 'Australia/Sydney', 'America/New_York'). Use for timezone-aware date calculations."
+      - name: financialYearEndDay
+        type: integer
+        description: "The day of the month the financial year ends (e.g. 30 for June 30, 31 for March 31). Combined with financialYearEndMonth to define the organisation's financial year boundary for YTD and annual reporting."
+      - name: financialYearEndMonth
+        type: integer
+        description: "The month number (1-12) when the financial year ends (e.g. 6 for June, 3 for March, 12 for December). CRITICAL for correct YTD and financial year calculations. Australian orgs typically end June (6); US orgs typically end December (12)."
+        examples: [6, 3, 12]
+      - name: taxNumber
+        type: text
+        description: "The organisation's tax registration number (e.g. ABN in Australia, IRD number in NZ, EIN in the US, VAT number in the UK). Used for tax compliance."
+      - name: paysTax
+        type: boolean
+        description: "True if this organisation is registered for and pays GST/VAT/sales tax. False for tax-exempt or below-threshold organisations. Affects whether tax is applied on transactions."
+      - name: salesTaxBasis
+        type: text
+        description: "The accounting basis for sales tax reporting. ACCRUALS = tax reported when invoice is raised. CASH = tax reported when payment is received. Critical for tax period reporting."
+        examples: ["ACCRUALS", "CASH"]
+      - name: salesTaxPeriod
+        type: text
+        description: "How frequently the organisation reports and remits sales tax. Typical values: MONTHLY, QUARTERLY, ANNUALLY. Affects tax period analysis."
+        examples:
+          ["MONTHLY", "QUARTERLY", "TWICEPERMONTH", "HALFYEARLY", "ANNUALLY"]
+      - name: periodLockDate
         type: timestamp without time zone
-        description: "Timestamp of the last modification to this record."
+        description: "The accounting period lock date. Transactions dated on or before this date are locked and cannot be modified in Xero. Use this to understand which historical periods are finalised for reporting."
+      - name: createdDateUTC
+        type: timestamp without time zone
+        description: "The date this Xero organisation was created (set by Xero)."
+      - name: addresses
+        type: jsonb
+        description: "JSON array of the organisation's registered addresses. Each entry includes AddressType (POBOX, STREET), AddressLine1-4, City, Region, PostalCode, and Country."
+      - name: paymentTerms
+        type: jsonb
+        description: "JSON object containing the organisation's default payment terms for sales (Bills) and purchases (Sales). Each section includes Day and Type (DAYSAFTERBILLDATE, DAYSAFTERMONTHEND, etc.)."
+      - name: syncedAt
+        type: timestamp without time zone
+        description: "Timestamp when this organisation's data was last synced from Xero. Use to assess data freshness."
+      - name: createdAt
+        type: timestamp without time zone
+        description: "Timestamp when this row was first written to our local database."
+        required: true
+      - name: updatedAt
+        type: timestamp without time zone
+        description: "Timestamp of the last local database update, auto-managed by Prisma."
         required: true
 
-  # ═══════════════════════════════════════════════════════════════════════════
-  # INVENTORY & RENTALS
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  - name: inventory
-    description: >
-      Physical DVD copies in stock. Each row is one physical disc.
-      Multiple inventory items can exist for the same film (multiple copies).
-    business_context: >
-      Links films to rentals. The join path for revenue analysis is:
-      payment → rental → inventory → film.
-      Inventory count per film = number of copies available.
+  - name: xero_payments
+    description: "Stores all payments recorded in Xero — i.e. the actual cash transactions that settle invoices (ACCREC) and bills (ACCPAY). A payment in Xero links a bank account to either an invoice or a bill and records how much was paid and on what date. Each row is one payment event. Note: payments differ from bank transactions — a payment is the settlement of an invoice, not a raw bank movement."
+    business_context: "Use this table for cash flow analysis — it records when money actually changed hands, as opposed to xero_invoices which records when a debt was created. Key for days-to-pay analysis, cash receipts timelines, and cash basis P&L. The amount field is the cash paid. Join to xero_invoices via the invoice JSON field (contains InvoiceID) or via invoiceNumber to correlate payments with their invoices. The account field identifies which bank account the payment was made from/to."
+    sample_queries:
+      - description: "Total cash received in a period"
+        sql: "SELECT SUM(amount) FROM xero_payments WHERE date >= '2025-07-01' AND date < '2026-07-01' AND tenantId = '...'"
     columns:
-      - name: inventory_id
-        type: integer
-        description: "Primary key. Unique identifier for each physical DVD copy."
+      - name: id
+        type: uuid
+        description: "Internal UUID primary key generated by the application."
         role: primary_key
-      - name: film_id
-        type: smallint
-        description: "FK → film.film_id. Which film this disc contains."
-        role: foreign_key
-        references: "film.film_id"
+      - name: compositeId
+        type: text
+        description: "Unique composite key formed by concatenating paymentId and tenantId. Used as the upsert key during sync."
         required: true
-      - name: store_id
-        type: smallint
-        description: "Which store holds this inventory item."
+      - name: paymentId
+        type: text
+        description: "The Xero PaymentID — a UUID assigned by Xero uniquely identifying this payment within the organisation."
         required: true
-      - name: last_update
+      - name: tenantId
+        type: text
+        description: "The Xero Tenant ID scoping this payment to a specific organisation. Always filter by tenantId."
+        required: true
+      - name: xeroUserId
+        type: text
+        description: "The platform user ID who owns the Xero connection. Use tenantId for financial queries."
+        required: true
+      - name: invoiceNumber
+        type: text
+        description: "The invoice number that this payment settles (e.g. 'INV-0042'). Denormalised for query convenience. Use to join to xero_invoices without parsing JSON."
+      - name: invoice
+        type: jsonb
+        description: "JSON object with details of the invoice this payment is applied to. Contains InvoiceID (Xero UUID), InvoiceNumber, Type (ACCREC/ACCPAY), and AmountDue/AmountPaid. Use invoice->>'InvoiceID' to join to xero_invoices."
+      - name: account
+        type: jsonb
+        description: "JSON object identifying the bank account the payment was made from (for bills) or received into (for invoices). Contains AccountID and Code. Use account->>'Code' to identify the bank account."
+      - name: date
         type: timestamp without time zone
-        description: "Timestamp of the last modification to this record."
-        required: true
-    relationships:
-      - from: inventory.film_id
-        to: film.film_id
-        type: many_to_one
-        description: "Multiple inventory items (copies) can exist for one film."
-
-  - name: rental
-    description: >
-      Each row is one rental transaction — a customer renting a DVD.
-      Tracks when it was rented, when it was returned, and which staff processed it.
-    business_context: >
-      Core transaction table. Every rental generates a payment.
-      Use rental_date for time-based analysis.
-      return_date being NULL means the DVD has not been returned yet (overdue).
-      Join path for revenue: payment → rental → inventory → film.
-    columns:
-      - name: rental_id
-        type: integer
-        description: "Primary key. Unique identifier for each rental transaction."
-        role: primary_key
-      - name: rental_date
-        type: timestamp without time zone
-        description: "When the customer rented the DVD. Use for time-series analysis (DATE_TRUNC)."
-        required: true
-      - name: inventory_id
-        type: integer
-        description: "FK → inventory.inventory_id. Which physical DVD copy was rented."
-        role: foreign_key
-        references: "inventory.inventory_id"
-        required: true
-      - name: customer_id
-        type: smallint
-        description: "FK → customer.customer_id. Who rented it."
-        role: foreign_key
-        references: "customer.customer_id"
-        required: true
-      - name: return_date
-        type: timestamp without time zone
-        description: "When the DVD was returned. NULL means it has NOT been returned yet (overdue/outstanding)."
-      - name: staff_id
-        type: smallint
-        description: "FK → staff.staff_id. Which staff member processed this rental."
-        role: foreign_key
-        references: "staff.staff_id"
-        required: true
-      - name: last_update
-        type: timestamp without time zone
-        description: "Timestamp of the last modification to this record."
-        required: true
-    relationships:
-      - from: rental.customer_id
-        to: customer.customer_id
-        type: many_to_one
-        description: "Each rental belongs to one customer."
-      - from: rental.inventory_id
-        to: inventory.inventory_id
-        type: many_to_one
-        description: "Each rental is for one physical DVD copy."
-      - from: rental.staff_id
-        to: staff.staff_id
-        type: many_to_one
-        description: "Each rental was processed by one staff member."
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # PAYMENTS (💰 PRIMARY FINANCIAL TABLE)
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  - name: payment
-    description: >
-      All payment transactions. Each row is one payment made by a customer for a rental.
-      This is the PRIMARY TABLE for all financial/revenue analysis.
-    business_context: >
-      THE most important table for revenue queries.
-      - Total revenue = SUM(amount)
-      - Revenue by period = SUM(amount) GROUP BY DATE_TRUNC('month', payment_date)
-      - Revenue by customer = SUM(amount) GROUP BY customer_id
-      - Revenue by film = JOIN rental → inventory → film, then SUM(amount)
-      - Revenue by category = JOIN rental → inventory → film → film_category → category
-      All amounts are POSITIVE (there are no refunds/expenses in this table).
-    columns:
-      - name: payment_id
-        type: integer
-        description: "Primary key. Unique identifier for each payment."
-        role: primary_key
-      - name: customer_id
-        type: smallint
-        description: "FK → customer.customer_id. The customer who made this payment."
-        role: foreign_key
-        references: "customer.customer_id"
-        required: true
-      - name: staff_id
-        type: smallint
-        description: "FK → staff.staff_id. The staff member who collected this payment."
-        role: foreign_key
-        references: "staff.staff_id"
-        required: true
-      - name: rental_id
-        type: integer
-        description: "FK → rental.rental_id. The rental this payment is for."
-        role: foreign_key
-        references: "rental.rental_id"
-        required: true
+        description: "The date the payment was made/received. This is the CASH date — use this for cash-basis reporting and cash flow statements. Use DATE_TRUNC for period aggregations."
       - name: amount
         type: numeric
-        description: >
-          Payment amount in USD. ALL values are POSITIVE (revenue).
-          There are no negative values or refunds in this table.
-          Typical range: $0.99 to $11.99.
+        description: "The cash amount of this payment. Stored as DECIMAL(18,4). This is the actual money that moved. SUM(amount) gives total cash received (for ACCREC invoices) or total cash paid (for ACCPAY invoices). Use ROUND(amount, 2) for display."
+        role: metric
         required: true
-        examples: ["0.99", "2.99", "4.99", "5.99", "9.99"]
-      - name: payment_date
+      - name: paymentType
+        type: text
+        description: "The type of payment method or payment direction. Common values: ACCRECPAYMENT (customer payment received), ACCPAYPAYMENT (supplier payment made), AROVERPAYMENTPAYMENT, ARPREPAYMENTPAYMENT, APPREPAYMENTPAYMENT, APOVERPAYMENTPAYMENT."
+        examples:
+          [
+            "ACCRECPAYMENT",
+            "ACCPAYPAYMENT",
+            "AROVERPAYMENTPAYMENT",
+            "ARPREPAYMENTPAYMENT",
+          ]
+      - name: reference
+        type: text
+        description: "Optional reference number for the payment (e.g. bank transfer reference, cheque number, EFT reference). Use for payment tracing."
+      - name: updatedDateUtc
         type: timestamp without time zone
-        description: >
-          When the payment was made.
-          Use DATE_TRUNC('year', payment_date) for yearly aggregation.
-          Use DATE_TRUNC('month', payment_date) for monthly aggregation.
-          Use DATE_TRUNC('day', payment_date) for daily aggregation.
-          Data range is primarily in 2007.
+        description: "Timestamp (UTC) when this payment was last updated in Xero."
+      - name: createdAt
+        type: timestamp without time zone
+        description: "Timestamp when this row was first written to our local database."
         required: true
-    relationships:
-      - from: payment.customer_id
-        to: customer.customer_id
-        type: many_to_one
-        description: "Each payment is made by one customer. Join to get customer details."
-      - from: payment.rental_id
-        to: rental.rental_id
-        type: many_to_one
-        description: "Each payment is for one rental. Join rental → inventory → film for film-level revenue."
-      - from: payment.staff_id
-        to: staff.staff_id
-        type: many_to_one
-        description: "Each payment was collected by one staff member."
-    sample_queries:
-      - description: "Total revenue"
-        sql: "SELECT SUM(amount) AS total_revenue FROM payment"
-      - description: "Monthly revenue"
-        sql: "SELECT DATE_TRUNC('month', payment_date) AS month, SUM(amount) AS revenue FROM payment GROUP BY 1 ORDER BY 1"
-      - description: "Top 10 customers by spending"
-        sql: "SELECT c.first_name, c.last_name, SUM(p.amount) AS total_spent FROM payment p JOIN customer c ON p.customer_id = c.customer_id GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 10"
-      - description: "Revenue by film category"
-        sql: "SELECT cat.name AS category, SUM(p.amount) AS revenue FROM payment p JOIN rental r ON p.rental_id = r.rental_id JOIN inventory i ON r.inventory_id = i.inventory_id JOIN film_category fc ON i.film_id = fc.film_id JOIN category cat ON fc.category_id = cat.category_id GROUP BY 1 ORDER BY 2 DESC"
+      - name: updatedAt
+        type: timestamp without time zone
+        description: "Timestamp of the last local database update, auto-managed by Prisma."
+        required: true
 
-  # ═══════════════════════════════════════════════════════════════════════════
-  # PRE-AGGREGATED VIEWS (Convenience)
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  - name: sales_by_film_category
-    description: "Pre-aggregated view showing total sales (revenue) per film category/genre."
-    business_context: >
-      Quick lookup for revenue by genre WITHOUT needing complex joins.
-      Equivalent to: payment → rental → inventory → film → film_category → category.
-      Use this for simple category revenue queries. Use base tables for time-filtered queries.
+  - name: xero_purchase_orders
+    description: "Stores Purchase Orders (POs) from the Xero organisation. A purchase order is a formal document sent to a supplier committing to buy specified goods or services at agreed prices and quantities. POs sit upstream of bills — a PO becomes a bill (ACCPAY invoice) once the supplier delivers and invoices. Each row is one PO with its header and line item details."
+    business_context: "Use this table to analyse procurement activity, committed spend (POs that haven't yet become bills), and purchasing trends by supplier. Useful for comparing ordered vs received goods and tracking procurement pipeline. Filter by status to see approved POs (AUTHORISED) still awaiting delivery, or BILLED POs that have converted to bills. Join to xero_invoices to match POs with their resulting bills."
     columns:
-      - name: category
-        type: character varying
-        description: "Genre name (e.g., 'Action', 'Sports', 'Animation'). Same values as category.name."
-      - name: total_sales
+      - name: id
+        type: uuid
+        description: "Internal UUID primary key generated by the application."
+        role: primary_key
+      - name: purchaseOrderId
+        type: text
+        description: "The Xero PurchaseOrderID — a UUID assigned by Xero uniquely identifying this purchase order within the organisation."
+        required: true
+      - name: tenantId
+        type: text
+        description: "The Xero Tenant ID scoping this PO to a specific organisation. Always filter by tenantId."
+        required: true
+      - name: xeroUserId
+        type: text
+        description: "The platform user ID who owns the Xero connection. Use tenantId for financial queries."
+        required: true
+      - name: purchaseOrderNumber
+        type: text
+        description: "The human-readable PO number (e.g. 'PO-0001'). User-defined or auto-generated by Xero. Use for display and tracking."
+      - name: contactName
+        type: text
+        description: "The name of the supplier this PO was sent to. Denormalised from the contact record for query convenience."
+      - name: reference
+        type: text
+        description: "Optional internal reference number entered on the PO (e.g. internal requisition number, project code)."
+      - name: status
+        type: text
+        description: "The current status of the purchase order. DRAFT = not yet submitted. SUBMITTED = sent for approval. AUTHORISED = approved PO (committed spend). BILLED = fully converted to a bill. DELETED = removed."
+        examples: ["DRAFT", "SUBMITTED", "AUTHORISED", "BILLED", "DELETED"]
+      - name: date
+        type: timestamp without time zone
+        description: "The date the purchase order was raised. Use for time-series procurement analysis."
+      - name: deliveryDate
+        type: timestamp without time zone
+        description: "The requested/expected delivery date specified on the PO. Use for delivery timeline tracking."
+      - name: expectedArrivalDate
+        type: timestamp without time zone
+        description: "The expected arrival date for the ordered goods. May differ from deliveryDate if logistics transit time is specified."
+      - name: deliveryAddresses
+        type: text
+        description: "The delivery address for this purchase order as a concatenated string."
+      - name: deliveryInstructions
+        type: text
+        description: "Free-text delivery instructions provided on the PO (e.g. 'Leave at loading dock', 'Call on arrival')."
+      - name: telephone
+        type: text
+        description: "Contact telephone number added to the purchase order for the supplier or delivery contact."
+      - name: lineItems
+        type: jsonb
+        description: "JSON array of line items on the purchase order. Each item includes Description, Quantity, UnitAmount, ItemCode, AccountCode, TaxType, and LineAmount. Use for detailed breakdown of what was ordered."
+      - name: subTotal
         type: numeric
-        description: "Total revenue (SUM of payment.amount) for all films in this category. In USD."
-
-  - name: sales_by_store
-    description: "Pre-aggregated view showing total sales per store with manager info."
-    business_context: >
-      Quick lookup for revenue by store location.
-      Use for store-level performance comparison without complex joins.
-    columns:
-      - name: store
-        type: text
-        description: "Store location formatted as 'City, Country'."
-      - name: manager
-        type: text
-        description: "Store manager's name formatted as 'First Last'."
-      - name: total_sales
+        description: "The PO total before tax. Stored as DECIMAL(18,4). Represents committed net spend."
+        role: metric
+        required: true
+      - name: totalTax
         type: numeric
-        description: "Total revenue for this store. In USD."
-
-  - name: nicer_but_slower_film_list
-    description: "Same as film_list but with properly capitalized actor names. Slower due to string processing."
-    business_context: "Display-only view. Use film_list or base tables for queries instead — this view is slow."
-    columns:
-      - name: fid
-        type: integer
-        description: "Film ID."
-      - name: title
-        type: character varying
-        description: "Film title."
-      - name: description
-        type: text
-        description: "Plot summary."
-      - name: category
-        type: character varying
-        description: "Genre name."
-      - name: price
+        description: "The total tax on this purchase order. Stored as DECIMAL(18,4)."
+        role: metric
+        required: true
+      - name: total
         type: numeric
-        description: "Rental rate in USD."
-      - name: length
-        type: smallint
-        description: "Film duration in minutes."
-      - name: rating
-        type: USER-DEFINED
-        description: "MPAA rating."
-      - name: actors
+        description: "The gross total of the PO including tax (subTotal + totalTax). Stored as DECIMAL(18,4). This is the total committed spend on this PO. Use ROUND(total, 2) for display."
+        role: metric
+        required: true
+      - name: currencyCode
         type: text
-        description: "Properly capitalized actor names, comma-separated."
-
-  # ═══════════════════════════════════════════════════════════════════════════
-  # GEOGRAPHY
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  - name: address
-    description: "Physical addresses for customers, staff, and stores."
-    business_context: "Join path for geographic analysis: customer → address → city → country."
-    columns:
-      - name: address_id
-        type: integer
-        description: "Primary key."
-        role: primary_key
-      - name: address
-        type: character varying
-        description: "Street address line 1."
-        required: true
-      - name: address2
-        type: character varying
-        description: "Street address line 2. Usually null."
-      - name: district
-        type: character varying
-        description: "District, county, or province name."
-        required: true
-      - name: city_id
-        type: smallint
-        description: "FK → city.city_id."
-        role: foreign_key
-        references: "city.city_id"
-        required: true
-      - name: postal_code
-        type: character varying
-        description: "Postal/ZIP code. May be null for some countries."
-      - name: phone
-        type: character varying
-        description: "Phone number."
-        required: true
-      - name: last_update
+        description: "ISO 4217 currency code for this PO (e.g. 'AUD', 'USD'). All monetary values are in this currency."
+      - name: updatedDateUtc
         type: timestamp without time zone
-        description: "Timestamp of the last modification."
-        required: true
-    relationships:
-      - from: address.city_id
-        to: city.city_id
-        type: many_to_one
-        description: "Each address is in one city."
-
-  - name: city
-    description: "Cities around the world."
-    business_context: "Part of the geographic hierarchy: address → city → country. Use for city-level revenue breakdown."
-    columns:
-      - name: city_id
-        type: integer
-        description: "Primary key."
-        role: primary_key
-      - name: city
-        type: character varying
-        description: "City name (e.g., 'London', 'Kabul', 'Abu Dhabi')."
-        required: true
-      - name: country_id
-        type: smallint
-        description: "FK → country.country_id."
-        role: foreign_key
-        references: "country.country_id"
-        required: true
-      - name: last_update
+        description: "Timestamp (UTC) when this PO was last updated in Xero."
+      - name: createdAt
         type: timestamp without time zone
-        description: "Timestamp of the last modification."
+        description: "Timestamp when this row was first written to our local database."
         required: true
-    relationships:
-      - from: city.country_id
-        to: country.country_id
-        type: many_to_one
-        description: "Each city is in one country."
-
-  - name: country
-    description: "Countries of the world."
-    business_context: "Top of the geographic hierarchy. Use for country-level revenue analysis: payment → customer → address → city → country."
-    columns:
-      - name: country_id
-        type: integer
-        description: "Primary key."
-        role: primary_key
-      - name: country
-        type: character varying
-        description: "Country name (e.g., 'United States', 'India', 'Japan')."
-        required: true
-      - name: last_update
+      - name: updatedAt
         type: timestamp without time zone
-        description: "Timestamp of the last modification."
+        description: "Timestamp of the last local database update, auto-managed by Prisma."
         required: true
 
-  # ═══════════════════════════════════════════════════════════════════════════
-  # STORES
-  # ═══════════════════════════════════════════════════════════════════════════
-
-  - name: store
-    description: "Physical store locations. The DVD rental business has 2 stores."
-    business_context: "Use for store-level performance comparison. Each store has a manager (staff member) and an address."
+  - name: xero_quotes
+    description: "Stores Quotes (sales estimates/proposals) from the Xero organisation. A quote in Xero is a document sent to a prospective customer outlining proposed goods or services and their prices before a sale is confirmed. Quotes are pre-sales documents — they can be accepted (converted to an invoice) or declined. Each row is one quote with its header and pricing details."
+    business_context: "Use this table to analyse sales pipeline and conversion rates. Filter by status=ACCEPTED to find quotes converted to sales, or DECLINED/EXPIRED for lost opportunities. Compare total values of SENT quotes against ACCEPTED invoices to measure conversion. Join to xero_invoices on contactName to track which customers converted from quotes to invoices. Useful for sales forecasting and win/loss analysis."
     columns:
-      - name: store_id
-        type: integer
-        description: "Primary key. Store identifier (typically 1 or 2)."
+      - name: id
+        type: uuid
+        description: "Internal UUID primary key generated by the application."
         role: primary_key
-      - name: manager_staff_id
-        type: smallint
-        description: "FK → staff.staff_id. The staff member who manages this store."
-        role: foreign_key
-        references: "staff.staff_id"
+      - name: quoteId
+        type: text
+        description: "The Xero QuoteID — a UUID assigned by Xero uniquely identifying this quote within the organisation."
         required: true
-      - name: address_id
-        type: smallint
-        description: "FK → address.address_id. Physical location of the store."
-        role: foreign_key
-        references: "address.address_id"
+      - name: tenantId
+        type: text
+        description: "The Xero Tenant ID scoping this quote to a specific organisation. Always filter by tenantId."
         required: true
-      - name: last_update
+      - name: xeroUserId
+        type: text
+        description: "The platform user ID who owns the Xero connection. Use tenantId for financial queries."
+        required: true
+      - name: quoteNumber
+        type: text
+        description: "The human-readable quote number (e.g. 'QU-0042'). User-defined or auto-generated by Xero. Use for display and tracking."
+      - name: contactName
+        type: text
+        description: "The name of the prospective customer this quote was sent to. Denormalised from the contact record for query convenience."
+      - name: status
+        type: text
+        description: "The current status of the quote. DRAFT = not yet sent. SENT = sent to customer awaiting response. DECLINED = customer rejected. ACCEPTED = customer accepted (likely converted to invoice). INVOICED = converted to an invoice. DELETED = removed. Use ACCEPTED and INVOICED for won-deal analysis."
+        examples:
+          ["DRAFT", "SENT", "DECLINED", "ACCEPTED", "INVOICED", "DELETED"]
+      - name: date
         type: timestamp without time zone
-        description: "Timestamp of the last modification."
+        description: "The date the quote was created/issued. Use for time-series pipeline analysis."
+      - name: expiryDate
+        type: timestamp without time zone
+        description: "The date the quote offer expires. Quotes past this date that are still SENT/DRAFT are expired. Use for pipeline freshness analysis."
+      - name: subTotal
+        type: numeric
+        description: "The quote total before tax. Stored as DECIMAL(18,4). Represents the proposed net revenue."
+      - name: totalTax
+        type: numeric
+        description: "The total tax on this quote. Stored as DECIMAL(18,4)."
+      - name: total
+        type: numeric
+        description: "The gross total of the quote including tax. Stored as DECIMAL(18,4). This is the proposed deal value — use SUM(total) on ACCEPTED/SENT quotes for pipeline value analysis."
+        role: metric
+      - name: quoteData
+        type: jsonb
+        description: "Full JSON blob of the quote as returned by Xero API. Contains complete line items, terms, title, summary, and any other quote fields not in the flattened columns. Use for detailed quote content analysis."
+      - name: updatedDateUtc
+        type: timestamp without time zone
+        description: "Timestamp (UTC) when this quote was last updated in Xero."
+      - name: createdAt
+        type: timestamp without time zone
+        description: "Timestamp when this row was first written to our local database."
         required: true
-    relationships:
-      - from: store.address_id
-        to: address.address_id
-        type: many_to_one
-        description: "Each store has one physical address."
-      - from: store.manager_staff_id
-        to: staff.staff_id
-        type: many_to_one
-        description: "Each store has one manager."
+      - name: updatedAt
+        type: timestamp without time zone
+        description: "Timestamp of the last local database update, auto-managed by Prisma."
+        required: true
+
+  - name: xero_sync_runs
+    description: "Stores the audit log of every data sync run executed against a Xero organisation. Each row is one sync attempt — recording when it started, whether it succeeded or failed, how many records were synced, and at which sync stage a failure occurred. The sync pipeline pulls data from Xero in multiple sequential stages (e.g. accounts → contacts → invoices → payments)."
+    business_context: "Use this table to diagnose sync issues, understand data freshness, or build monitoring dashboards. Check the most recent completed run (status='complete') to know when data was last refreshed. Use failedAtLevel to identify which data type failed to sync. This is an operational monitoring table — not for financial analysis. Filter by tenantId to check sync health for a specific organisation."
+    columns:
+      - name: id
+        type: text
+        description: "Internal UUID primary key for this sync run record."
+        role: primary_key
+      - name: tenantId
+        type: text
+        description: "The Xero Tenant ID identifying which organisation this sync run was performed for."
+        required: true
+      - name: status
+        type: text
+        description: "The outcome of this sync run. 'running' = sync is currently in progress. 'complete' = sync finished successfully and all data was synced. 'failed' = sync encountered an error and stopped. Use to find the last successful sync."
+        examples: ["running", "complete", "failed"]
+        required: true
+      - name: startedAt
+        type: timestamp without time zone
+        description: "Timestamp when this sync run began. Use with completedAt to calculate sync duration."
+        required: true
+      - name: completedAt
+        type: timestamp without time zone
+        description: "Timestamp when this sync run finished (either successfully or with failure). NULL if status is still 'running'. completedAt - startedAt gives sync duration."
+      - name: failedAtLevel
+        type: integer
+        description: "If status='failed', this integer indicates which sequential sync stage failed (0-indexed). For example: 0 = failed at accounts, 1 = failed at contacts, 2 = failed at invoices, etc. NULL if status is 'complete' or 'running'. Use to diagnose which data type is failing to sync."
+      - name: errorMessage
+        type: text
+        description: "The error message captured when the sync failed. Contains Xero API error details or system errors. NULL if status is 'complete'. Use for debugging failed syncs."
+      - name: recordsSynced
+        type: integer
+        description: "The total number of records upserted to the database during this sync run. A higher number indicates more data was refreshed. Zero may indicate a failed sync or no data changes."
+        required: true
+      - name: createdAt
+        type: timestamp without time zone
+        description: "Timestamp when this sync run record was created in our local database."
+        required: true

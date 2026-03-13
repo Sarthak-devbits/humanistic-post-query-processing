@@ -37,7 +37,7 @@
       },
       {
         "type": "object",
-        "description": "Gauge/speedometer (e.g., Months of Runway)",
+        "description": "Gauge/speedometer for percentage, rate, or bounded metric. Use for: collection rate (0-100%), gross margin % (0-100%), DSO days (0-90), DPO days (0-90), quote win rate (0-100%), avg days to pay (0-90), business runway months (0-24). Never use for absolute dollar amounts.",
         "properties": {
           "type": { "const": "gauge" },
           "title": { "type": "string" },
@@ -78,7 +78,7 @@
       },
       {
         "type": "object",
-        "description": "Donut/pie chart for part-of-whole (e.g., Expense breakdown)",
+        "description": "Donut/pie chart for proportional breakdowns. Use when result has 2-4 rows (< 5) with one label column and one value column. Xero use cases: revenue by customer, spend by supplier, AR aging buckets, invoice status distribution, cash-in vs cash-out split. If >= 5 rows, use bar_chart instead.",
         "properties": {
           "type": { "const": "donut_chart" },
           "title": { "type": "string" },
