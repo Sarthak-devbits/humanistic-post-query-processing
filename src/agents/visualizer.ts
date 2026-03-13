@@ -222,11 +222,12 @@ Use these rules to pick the BEST widget for each sub-task result. Always look at
 
 ## Rules
 1. Field names MUST exactly match column names from the sample data shown.
-2. ALWAYS include exactly one ai_insight.
+2. **ALWAYS include exactly one ai_insight** — it is MANDATORY and separate from data widgets. Never skip it.
 3. For ai_insight, do NOT set dataSourceIndex.
-4. Return 2–8 widgets total.
-5. **Before defaulting to bar_chart**: check if donut_chart fits (< 5 rows, proportion data).
-6. **Before defaulting to metric_card**: check if gauge fits (percentage, rate, or bounded metric).
+4. **ALWAYS include at least 2 data visualisation widgets** (non-ai_insight types) in addition to the ai_insight. Minimum total = 3 widgets (2 data + 1 ai_insight). Maximum = 8.
+5. Each data widget must be a DIFFERENT type — do not return two bar_charts or two metric_cards for the same data.
+6. **Before defaulting to bar_chart**: check if donut_chart fits (< 5 rows, proportion data).
+7. **Before defaulting to metric_card**: check if gauge fits (percentage, rate, or bounded metric).
 
 ## Colors: Revenue/Profit/Positive→green, Expenses/Loss/Negative→red, Neutral/Info→blue, Warning/Overdue→orange, Special→purple`;
 
